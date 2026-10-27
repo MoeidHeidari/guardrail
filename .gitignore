@@ -1,25 +1,18 @@
-# Binaries for different platforms
 /bin/
 /darwin_amd64/
 /linux_amd64/
 /windows_amd64/
 
-# Go binary operational artifacts
 *.exe
 *.test
 
-# Miscellaneous
 /.guardrail.yaml
 
-# IDE
 .vscode/
 .idea/
 
-# Environment variables
 .env
 
-# Tomlock
 /tomlock
 
-# CI
 /.git/
