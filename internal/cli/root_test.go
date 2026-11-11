@@ -38,7 +38,8 @@ func TestRejectUnsupportedCommandsAndFlags(t *testing.T) {
 		{"greet"},
 		{"version"},
 		{"rules"},
-		{"watch", "."},
+		{"watch", ".", ".."},
+		{"watch", ".", "--context", "."},
 		{"watch", "--path", "."},
 		{"--config", "config.yaml"},
 		{"--verbose"},
@@ -46,6 +47,21 @@ func TestRejectUnsupportedCommandsAndFlags(t *testing.T) {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			if _, err := executeCommand(args...); err == nil {
 				t.Fatal("expected an error")
+			}
+		})
+	}
+}
+
+func TestWatchContextValidation(t *testing.T) {
+	for _, args := range [][]string{
+		{"watch", "/guardrail/nonexistent-context"},
+		{"watch", "--context", "/guardrail/nonexistent-context"},
+		{"watch", "-c", "/guardrail/nonexistent-context"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			_, err := executeCommand(args...)
+			if err == nil || !strings.Contains(err.Error(), "resolve context") {
+				t.Fatalf("expected context validation before terminal startup, got %v", err)
 			}
 		})
 	}
