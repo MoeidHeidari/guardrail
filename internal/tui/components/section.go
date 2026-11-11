@@ -7,7 +7,6 @@ import (
 
 func NewSection(theme styles.Theme, title string, children ...*tui.Element) *tui.Element {
 	section := NewContainer(theme,
-		tui.WithPadding(1),
 		tui.WithGap(0),
 	)
 	if title != "" {

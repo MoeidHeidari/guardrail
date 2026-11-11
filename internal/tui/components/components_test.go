@@ -88,23 +88,24 @@ func TestLayoutResizes(t *testing.T) {
 	root := components.NewLayout(theme, header, sidebar, content)
 
 	for _, size := range []struct{ width, height int }{
-		{120, 40}, {80, 24}, {40, 12}, {20, 8}, {80, 24},
+		{240, 60}, {160, 48}, {120, 40}, {80, 24}, {40, 12}, {20, 8}, {80, 24},
 	} {
 		t.Run(fmt.Sprintf("%dx%d", size.width, size.height), func(t *testing.T) {
 			root.MarkDirty()
 			root.Calculate(size.width, size.height)
 			h, s, c := header.Rect(), sidebar.Rect(), content.Rect()
-			if h.Height != 3 {
-				t.Errorf("header height = %d, want 3", h.Height)
+			if h.Height != 4 {
+				t.Errorf("header height = %d, want 4", h.Height)
 			}
-			if s.Y != h.Y+h.Height+1 || s.Y != c.Y || s.Height != c.Height {
+			if s.Y != h.Y+h.Height || s.Y != c.Y || s.Height != c.Height {
 				t.Errorf("body is not aligned below header: header=%+v sidebar=%+v content=%+v", h, s, c)
 			}
 			if c.X != s.X+s.Width+1 || c.Width <= 0 || s.Width <= 0 {
 				t.Errorf("body columns overlap or collapse: sidebar=%+v content=%+v", s, c)
 			}
-			if s.Width != (h.Width-1)/4 {
-				t.Errorf("sidebar width = %d, want %d", s.Width, (h.Width-1)/4)
+			wantSidebar := min(38, h.Width-1-(h.Width*70+50)/100)
+			if s.Width != wantSidebar {
+				t.Errorf("sidebar width = %d, want %d", s.Width, wantSidebar)
 			}
 			if c.X+c.Width != h.X+h.Width {
 				t.Errorf("content right edge = %d, want header right edge %d", c.X+c.Width, h.X+h.Width)
@@ -117,14 +118,9 @@ func TestLayoutResizes(t *testing.T) {
 			}
 			buffer := tui.NewBuffer(size.width, size.height)
 			root.RenderTo(buffer, size.width, size.height)
-			for x := h.X; x < h.X+h.Width; x++ {
-				if !buffer.Cell(x, h.Y+h.Height).Style.Bg.Equal(theme.Background) {
-					t.Fatal("sections painted over the gap below the header")
-				}
-			}
 			for y := s.Y; y < s.Y+s.Height; y++ {
-				if !buffer.Cell(s.X+s.Width, y).Style.Bg.Equal(theme.Background) {
-					t.Fatal("sections painted over the sidebar-content gap")
+				if !buffer.Cell(s.X+s.Width, y).Style.Bg.Equal(theme.Separator) {
+					t.Fatal("sections painted over the sidebar-content separator")
 				}
 			}
 		})
