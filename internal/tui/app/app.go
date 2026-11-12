@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MoeidHeidari/guardrail/internal/analysis"
 	"github.com/MoeidHeidari/guardrail/internal/tui/screens"
 	"github.com/MoeidHeidari/guardrail/internal/tui/styles"
 	"github.com/MoeidHeidari/guardrail/internal/watcher"
@@ -39,6 +40,9 @@ func Run(ctx context.Context, contextPath string) (err error) {
 		}
 	}()
 	screen := screens.NewMain(theme, files.Root, files.Initial)
+	live, reports, stopAnalysis := analysis.StartLive(ctx, files.Root)
+	defer stopAnalysis()
+	screen.BeginAnalysis(live.Submit(files.Initial))
 	previews, stopPreviews := screen.StartPreviewWorker(ctx)
 	defer stopPreviews()
 	terminal.SetRootComponent(screen)
@@ -101,8 +105,13 @@ func Run(ctx context.Context, contextPath string) (err error) {
 				frames.request(true)
 			}
 			scheduleAnimation()
+		case report := <-reports:
+			if screen.ApplyAnalysis(report) {
+				frames.request(true)
+			}
 		case update := <-updates:
 			screen.Apply(update)
+			screen.BeginAnalysis(live.Submit(update))
 			frames.request(true)
 			scheduleAnimation()
 		case event := <-terminal.Events():

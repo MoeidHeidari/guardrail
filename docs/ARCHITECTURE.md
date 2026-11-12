@@ -4,128 +4,89 @@
 
 ## Product direction
 
-Guardrail aims to validate repository-defined engineering standards during
-AI-assisted development. A file such as `AGENTS.md` can instruct an agent;
-Guardrail's intended role is to independently inspect changed code and explain
-where it violates repository policy.
+Guardrail validates repository-defined engineering standards during human and
+AI-assisted development. Filesystem events do not identify authorship; analysis
+sees saved file snapshots, not unsaved editor buffers.
 
-The rules should apply to human and agent edits alike. Filesystem events do not
-identify authorship. Local monitoring detects saved changes; editor integration
-would be needed to analyze unsaved buffers.
-
-## Implemented today
+## Implemented pipeline
 
 ```mermaid
 flowchart LR
-    CLI["watch command and context path"] --> Watcher["Initial discovery and fsnotify"]
-    Watcher --> Index["Indexed reconciliation"]
-    Index --> Updates["Metadata deltas and changes"]
-    Updates --> Screen["Screen state and hierarchy"]
-    Screen --> UI["Dashboard / Watch / Content"]
-    Screen --> Worker["Bounded preview worker"]
-    Worker --> UI
+    CLI["watch / context"] --> Watcher["fsnotify / indexed reconciliation"]
+    Watcher --> Screen["Hierarchy / events / previews"]
+    Watcher --> Live["Coalescing analysis coordinator"]
+    Config[".guard YAML rule sets / scripts"] --> Engine["Shared engine"]
+    Live --> Engine
+    Check["check / text or JSON"] --> Engine
+    Engine --> Parser["Tree-sitter: Go / JS / TS / Python / Rust"]
+    Engine --> Rules["RE2 regex / embedded Goja"]
+    Parser --> Report["File / rule / kind / location / message"]
+    Rules --> Report
+    Report --> UI["Overview / Violations / Rules / Content"]
+    Report --> Exit["CLI report / exit status"]
+    Screen --> UI
 ```
 
 | Location | Responsibility |
 | --- | --- |
 | [cmd/guardrail](../cmd/guardrail/) | Executable entry point |
-| [internal/cli](../internal/cli/) | Cobra commands and context arguments |
-| [internal/watcher](../internal/watcher/) | Root resolution, recursive watches, indexes, reconciliation |
-| [internal/tui/app](../internal/tui/app/) | Startup, event loop, frame scheduling, cleanup |
-| [internal/tui/screens](../internal/tui/screens/) | State, hierarchy, navigation, tabs, previews, activity |
-| [internal/tui/components](../internal/tui/components/) | Reusable containers, sections, header, sidebar, layout |
+| [internal/cli](../internal/cli/) | Cobra commands, context, output and exit semantics |
+| [internal/config](../internal/config/) | Strict YAML validation and analysis scope |
+| [internal/analysis](../internal/analysis/) | Parsing, rule runtime, reports, disk check and live coordinator |
+| [internal/watcher](../internal/watcher/) | Recursive watches, indexes and reconciliation |
+| [internal/tui/app](../internal/tui/app/) | Terminal lifecycle, event loop, workers and frame scheduling |
+| [internal/tui/screens](../internal/tui/screens/) | Hierarchy, navigation, findings, previews and activity |
+| [internal/tui/components](../internal/tui/components/) | Reusable containers, sections and layout |
 | [internal/tui/styles](../internal/tui/styles/) | Light/dark palettes and startup detection |
 
-The watcher emits a full initial snapshot, then upserts, removals, and change
+## Analysis and concurrency
+
+The watcher emits a full initial snapshot, then upserts, removals and change
 records. UI indexes avoid rebuilding hierarchy for ordinary metadata writes.
-Preview results carry request identities so outdated work cannot overwrite
-newer state. Screen mutation and result acceptance belong to the UI loop.
+Analysis receives the same updates through a synchronized metadata index and
+one-slot wake signal. It runs separately from the UI, caching per-file results
+by update version. Changed configuration/scripts invalidate the whole analysis
+cache. Deleted paths disappear from the next report. YAML discovery is recursive;
+rule IDs are scoped by the containing folder (General at the root), and findings
+carry rule-set and YAML source metadata. Each YAML retains its scope and timeout.
 
-See [Performance and limits](PERFORMANCE.md) for batching, virtualization,
-backpressure, and resource boundaries.
+The root `.guardignore` uses Git-style matching in both watch and check.
+Ignored directories are pruned before adding watches. Changes to the ignore
+file rescan the context, reconcile watches, and publish a full metadata snapshot.
 
-## Planned standards pipeline
+New updates cancel running jobs and coalesce into the next snapshot. Reports
+carry a generation; only the current generation may update the UI. Preview
+workers independently reject outdated request identities. All screen mutations
+belong to the terminal event loop.
 
-The following components are proposals, **not implemented APIs or commands**:
+The shared engine consumes `(context, relative path, content)` independently of
+terminal rendering. File discovery/read helpers feed it in both `check` and live
+mode. The JavaScript interface remains exactly `(path, content)`, with no host
+APIs or AST argument. A fresh runtime per file/rule avoids shared mutable state.
+Tree-sitter trees/parsers are closed after each evaluation.
 
-```mermaid
-flowchart TD
-    Config["Proposed .guardrail.yml"] --> Registry["Rule registry"]
-    FS["Filesystem changes"] --> Coordinator["Analysis coordinator"]
-    Editor["Editor document buffers"] --> Coordinator
-    CIInput["CI file discovery"] --> Workspace["File contexts"]
-    Coordinator --> Workspace
-    Workspace --> Engine["Shared rule engine"]
-    Registry --> Engine
-    Language["Syntax / language analysis"] --> Engine
-    Dependencies["Dependency graph"] --> Engine
-    Engine --> Findings["Rule ID / file / location / severity / message"]
-    Findings --> Dashboard["Live dashboard"]
-    Findings --> Check["CLI / CI results"]
-    Findings --> Agent["Optional agent feedback"]
-    Findings --> Diagnostics["Editor diagnostics"]
-```
+Parsing errors, read errors, configuration failures and runtime failures remain
+distinct from policy violations. Unsupported grammars are explicitly text-only.
+No file-length/comment/architecture policy is built in; the repository's
+300-line convention is an explicit example rule, not an implicit engine policy.
 
-### Proposed responsibilities
-
-| Component | Intended responsibility |
-| --- | --- |
-| Configuration | Load and validate repository rules, proposed in `.guardrail.yml` |
-| Workspace | Discover analysis inputs, resolve paths, provide content and language |
-| Coordinator | Select affected files, coalesce work, track versions, reject stale results |
-| Engine | Evaluate applicable rules independently of the UI |
-| Rule registry/runtime | Define rule contracts and execute registered checks |
-| Language analysis | Syntax-aware checks, potentially Tree-sitter and specialized analyzers |
-| Architecture analysis | Dependency tracking and forbidden cross-layer relationships |
-| Output | Shared findings rendered as terminal text, structured data, or diagnostics |
-| Agent integrations | Deliver actionable feedback through explicit integrations/hooks |
-
-Configuration syntax, analyzer selection, runtime interfaces, and integration
-protocols still need design. Earlier sketches used `.guardrail/rules.yaml`;
-the current product proposal uses `.guardrail.yml`. Neither path is loaded today.
-Do not treat example plans as a supported configuration contract.
-
-### Rule evaluation contract
-
-The intended data flow is:
-
-```text
-File context -> applicable rules -> findings
-```
-
-A file context should contain a path, context/repository root, content, and detected
-language. A finding should identify a rule, file, location, severity, and explanation.
-Execution failures must remain distinct from policy violations.
-
-The engine should consume supplied content rather than own terminal behavior or
-filesystem watching. That keeps the same evaluation usable for disk snapshots,
-editor buffers, and CI.
+See [Rules and checking](RULES.md) for the supported schema, runtime contract,
+limits and trust boundaries, and [Performance and limits](PERFORMANCE.md) for
+watch/preview resource behavior.
 
 ## Roadmap
 
-1. **Configuration and first rule:** validate `.guardrail.yml` and implement a
-   maximum-file-length rule without needing a syntax parser.
-2. **Live findings:** perform startup analysis, recheck changed files, clear
-   resolved/deleted findings, and show exact locations on Dashboard.
-3. **One-shot checking:** introduce a planned `guardrail check` command using the
-   same engine, with explicit exit semantics and structured output for CI.
-4. **Syntax-aware rules:** add comment and function-length checks, then expand
-   language support according to tested analyzer capabilities.
-5. **Architecture rules:** incrementally track dependencies and affected dependents.
-6. **Agent/editor integrations:** deliver findings to supported tools and optionally
-   analyze unsaved document buffers.
-
-Examples of intended policies include no source comments, at most 300 lines per
-file, at most 40 lines per function, and forbidden architectural dependencies.
-None are currently enforced by the application.
+1. Syntax-aware custom-rule helpers and additional tested grammars.
+2. Dependency graphs, cross-layer policies and affected-dependent analysis.
+3. Severity and richer diagnostic/report integrations.
+4. Agent/editor integrations, including unsaved document buffers where supported.
+5. CI tooling beyond the current noninteractive `check` command.
 
 ## Design boundaries
 
-- Share evaluation and finding semantics across TUI, CLI, CI, and integrations.
-- Keep browsing scope separate from future analysis exclusions.
-- Reuse unaffected results and invalidate dependent results when required.
-- Track content versions so rapid saves cannot publish obsolete findings.
-- Surface failures instead of substituting an empty, success-shaped result.
-- Do not describe saved-file monitoring as blocking edits. Preventing merges
-  requires CI checks; agent correction requires a supported feedback integration.
-- Add packages when their functionality exists, not an empty speculative tree.
+- Keep browsing scope separate from analysis exclusions.
+- Reuse unaffected results and reject stale work.
+- Surface errors instead of substituting an empty successful result.
+- JavaScript host restrictions are not process or memory isolation.
+- Saved-file monitoring does not block edits. Merge prevention requires CI
+  handling of check exit codes; agent correction needs an explicit integration.

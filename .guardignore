@@ -1,0 +1,10 @@
+.git/
+/bin/
+node_modules/
+vendor/
+.venv/
+__pycache__/
+/dist/
+/build/
+/target/
+*.log

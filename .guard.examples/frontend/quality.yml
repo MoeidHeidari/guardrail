@@ -1,0 +1,21 @@
+version: 1
+timeout_ms: 100
+include:
+  - "**/*.js"
+  - "**/*.jsx"
+exclude:
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/*.test.js"
+rules:
+  - id: debug-console
+    type: regex
+    description: Flags console.log and console.debug calls in application source.
+    pattern: '\bconsole\.(log|debug)\s*\('
+    message: Remove temporary console output.
+  - id: unfinished-work
+    type: javascript
+    description: Demonstrates a file-level boolean finding when TODO appears in saved text.
+    message: Resolve or track the TODO before sharing this file.
+    code: |
+      (path, content) => content.includes("TODO")

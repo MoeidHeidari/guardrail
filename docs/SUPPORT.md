@@ -19,8 +19,9 @@ Community support is best effort; there is no guaranteed response time.
 3. Reproduce using a small disposable context where possible.
 4. Identify the commit/build you used and whether it still happens on current code.
 
-Rule configuration, standards enforcement, agent feedback, and `guardrail check`
-are planned. Their absence is not a watcher regression.
+Regex/JavaScript configuration and `guardrail check` are supported; consult
+[Rules and checking](RULES.md) for errors and scope. Agent/editor feedback and
+dependency-aware policies remain planned.
 
 ## Bug-report checklist
 

@@ -2,6 +2,14 @@ package screens
 
 import "github.com/grindlemire/go-tui"
 
+func viewport(el *tui.Element) int {
+	if el == nil {
+		return 10
+	}
+	_, height := el.ViewportSize()
+	return max(1, height)
+}
+
 func (m *Main) styleScrollbar(el *tui.Element) {
 	el.Apply(
 		tui.WithScrollbarStyle(tui.Style{Fg: m.theme.Separator, Bg: m.theme.Background}),
@@ -43,7 +51,14 @@ func (m *Main) handleScrollbar(event tui.MouseEvent) bool {
 	if event.Action != tui.MousePress || event.Button != tui.MouseLeft {
 		return false
 	}
-	for _, el := range []*tui.Element{m.tree, m.feed} {
+	panes := []*tui.Element{m.tree, m.feed, m.watchPane}
+	if m.overviewVisible() {
+		panes = append(panes, m.overviewList, m.overviewPreview)
+	}
+	if m.rulesVisible() {
+		panes = append(panes, m.rulesList, m.rulesFiles, m.rulesPreview)
+	}
+	for _, el := range panes {
 		if el == nil {
 			continue
 		}
@@ -52,7 +67,15 @@ func (m *Main) handleScrollbar(event tui.MouseEvent) bool {
 		if maximum == 0 || event.X != rect.X+rect.Width-1 || !rect.Contains(event.X, event.Y) {
 			continue
 		}
-		m.changesFocus = el == m.feed
+		m.changesFocus = el == m.feed || el == m.overviewList || el == m.overviewPreview
+		for i, pane := range []*tui.Element{m.rulesList, m.rulesFiles, m.rulesPreview} {
+			if m.rulesVisible() && el == pane {
+				m.rulesFocus, m.changesFocus = i, true
+			}
+		}
+		m.overviewPreviewFocus = el == m.overviewPreview
+		m.watchFocus = el == m.watchPane
+		m.navigationFocus = false
 		y := event.Y - rect.Y
 		if y >= top && y < top+size {
 			m.dragPane, m.dragGrab = el, y-top
@@ -70,10 +93,26 @@ func (m *Main) handleScrollbar(event tui.MouseEvent) bool {
 }
 
 func (m *Main) setScroll(el *tui.Element, offset int) {
-	if el == m.tree {
+	if el == m.rulesPreview {
+		m.contentOffset = offset
+	} else if el == m.rulesList {
+		m.findingOffset = offset
+	} else if el == m.rulesFiles {
+		m.rulesFileSelection = min(offset, max(0, len(m.rulesMatches)-1))
+		m.rulesPath = ""
+		m.updateRuleFiles()
+	} else if el == m.overviewPreview {
+		m.contentOffset = offset
+	} else if el == m.overviewList {
+		m.findingOffset = offset
+	} else if el == m.watchPane {
+		m.changeOffset = offset
+	} else if el == m.tree {
 		m.treeOffset = offset
 	} else if m.contentTab {
 		m.contentOffset = offset
+	} else if m.dashboardVisible() {
+		m.findingOffset = offset
 	} else {
 		m.changeOffset = offset
 	}

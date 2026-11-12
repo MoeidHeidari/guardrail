@@ -1,0 +1,11 @@
+version: 1
+include:
+  - "**/*.go"
+  - "**/*.js"
+  - "**/*.txt"
+rules:
+  - id: conflict-markers
+    type: regex
+    description: Detects unresolved Git conflict marker lines in source and text notes.
+    pattern: '(?m)^(<<<<<<< |=======$|>>>>>>> )'
+    message: Resolve the merge conflict before sharing this file.

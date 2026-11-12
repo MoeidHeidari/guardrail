@@ -13,7 +13,7 @@ Participation is subject to the [code of conduct](CODE_OF_CONDUCT.md).
 - Open an issue before a substantial feature or architectural change so scope
   and approach can be agreed on.
 - Read [Architecture and roadmap](ARCHITECTURE.md) to distinguish implemented
-  watching from planned standards analysis.
+  watching and analysis from planned integrations.
 - Send vulnerabilities privately according to the [security policy](SECURITY.md).
 
 ## Contribution workflow

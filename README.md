@@ -6,9 +6,10 @@ Guardrail is an open-source CLI being built to check code changes against a
 repository's engineering standards. Instructions tell coding agents what to do;
 Guardrail's goal is to verify the result and explain violations as they happen.
 
-**Current status:** the live filesystem workspace is implemented. Rule evaluation,
-configuration loading, agent integrations, and CI checks are planned, not available
-yet. Guardrail does not currently enforce file-length, comment, or architecture rules.
+**Current status:** recursive watching, Tree-sitter parsing, YAML-defined regex and
+JavaScript rules, live findings, and `guardrail check` are implemented.
+Agent/editor integrations and dependency-aware rules remain planned.
+Policies are repository-defined, not built in.
 
 ## Table of contents
 
@@ -26,15 +27,21 @@ yet. Guardrail does not currently enforce file-length, comment, or architecture 
 - Browse a live file tree with keyboard and mouse controls.
 - See added and modified files, animated activity, and a recent change feed.
 - Preview files with syntax highlighting and an inferred live edit cursor.
-- Use Dashboard, Watch, and Content tabs in a light- or dark-themed terminal UI.
+- Navigate Overview, Violations, and Rules above the Context tree, with Watch
+  below it and an on-demand Content tab in a light- or dark-themed terminal UI.
+- Run regex and restricted JavaScript functions from YAML rule sets under `.guard/`, inline or
+  referenced from `.guard/` or `.guardrail/`.
+- Parse Go, JavaScript, TypeScript, Python, and Rust and inspect live findings.
+- Run `guardrail check --format json` for noninteractive checks.
 
 Watching uses filesystem notifications, not periodic full-directory polling.
-Dashboard currently shows a workspace summary; it is the home for future
-engineering-standard findings.
+Overview shows analysis status; Violations distinguishes policy findings from
+execution errors. Missing configuration never implies a successful check.
 
 ## Getting started
 
-You need **Go 1.26.2 or newer**, Git, and an interactive terminal.
+You need **Go 1.26.2 or newer**, Git, and a C compiler for Tree-sitter (CGO enabled).
+Watching also requires an interactive terminal.
 Build from source:
 
 ```sh
@@ -63,6 +70,10 @@ It does not automatically select the Git root. Use either a positional path or
 `--context` (`-c`), not both.
 
 See [Getting started](docs/GETTING_STARTED.md) for setup details and troubleshooting.
+See [Rules and checking](docs/RULES.md) for configuration, JavaScript contracts,
+analysis scope, and exit codes. This repository includes runnable
+[General rules](.guard/rules.yml), [maintainability rules](.guard/maintainability/source.yml),
+[Go rules](.guard/go/quality.yaml), and an [inline example](examples/rules/inline.yml).
 
 ## Using the workspace
 
@@ -70,7 +81,8 @@ The context tree opens one level deep. Child folders remain collapsed until open
 
 | Action | Control |
 | --- | --- |
-| Dashboard / Watch / Content | `0` / `1` / `2`, or click a tab |
+| Workspace page / focus sidebar activity / Content | `0` / `1` / `2` (Content appears after opening a file) |
+| Overview / Violations / Rules | Sidebar click or `o` / `v` / `u` |
 | Switch pane focus | `Tab` |
 | Navigate | Arrow keys or `h` / `j` / `k` / `l` |
 | Toggle a folder or preview a file | `Enter`, `Space`, or click |
@@ -81,7 +93,9 @@ The context tree opens one level deep. Child folders remain collapsed until open
 These are session change markers, **not Git status**.
 
 Previews are read-only and limited to UTF-8 regular files up to 1 MiB and 20,000
-lines. All entries, including hidden and Git-ignored files, are monitored.
+lines. The root [`.guardignore`](.guardignore) excludes paths from
+watching, the context tree, and checking using Git-style patterns.
+Git's own ignore files are not loaded.
 Large contexts remain subject to OS watch and open-file limits.
 
 See the [watch guide](docs/WATCH.md) for complete controls and behavior.
@@ -93,8 +107,9 @@ See the [watch guide](docs/WATCH.md) for complete controls and behavior.
 | [Documentation index](docs/README.md) | All guides, grouped by audience |
 | [Getting started](docs/GETTING_STARTED.md) | Build, launch, context selection, troubleshooting |
 | [Watch workspace](docs/WATCH.md) | Tabs, tree, content preview, markers, keyboard and mouse |
+| [Rules and checking](docs/RULES.md) | YAML, regex, JavaScript, parsing, live results, CLI checks |
 | [Performance and limits](docs/PERFORMANCE.md) | Event processing, large contexts, benchmarks, resource limits |
-| [Architecture and roadmap](docs/ARCHITECTURE.md) | Implemented components and planned standards engine |
+| [Architecture and roadmap](docs/ARCHITECTURE.md) | Implemented components and future integrations |
 | [Development](docs/DEVELOPMENT.md) | Local checks, tests, project structure, TUI composition |
 | [Contributing](docs/CONTRIBUTING.md) | Issues, pull requests, code style, conventional titles |
 | [Code of conduct](docs/CODE_OF_CONDUCT.md) | Community expectations and private reporting |
@@ -106,7 +121,7 @@ See the [watch guide](docs/WATCH.md) for complete controls and behavior.
 Bug reports, documentation improvements, tests, and focused code contributions
 are welcome. Read the [contribution guide](docs/CONTRIBUTING.md) before opening a PR.
 Keep source and test files at or below 300 lines and include tests for behavior
-changes. Proposed rule-engine work should clearly distinguish planned features
+changes. Proposed features should clearly distinguish planned functionality
 from currently supported behavior.
 
 ## Community and support

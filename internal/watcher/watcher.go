@@ -10,6 +10,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/MoeidHeidari/guardrail/internal/ignore"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -37,6 +38,7 @@ type Update struct {
 }
 
 type Watcher struct {
+	ignore   *ignore.Matcher
 	Root     string
 	Initial  Update
 	backend  *fsnotify.Watcher
@@ -76,6 +78,10 @@ func New(path string) (*Watcher, error) {
 		return nil, fmt.Errorf("create filesystem watcher: %w", err)
 	}
 	w := &Watcher{Root: root, backend: backend}
+	w.ignore, err = ignore.Load(root)
+	if err != nil {
+		return nil, errors.Join(err, backend.Close())
+	}
 	entries, err := w.scan()
 	if err != nil {
 		return nil, errors.Join(err, backend.Close())
@@ -119,6 +125,9 @@ func (w *Watcher) Run(ctx context.Context, updates chan<- Update) error {
 			if err != nil {
 				return fmt.Errorf("resolve changed path: %w", err)
 			}
+			if w.ignore.Matches(relative, false) {
+				continue
+			}
 			if entry, exists := w.index[relative]; exists && entry.IsDir() && event.Op == fsnotify.Write {
 				continue
 			}
@@ -134,7 +143,7 @@ func (w *Watcher) Run(ctx context.Context, updates chan<- Update) error {
 				return err
 			}
 			clear(pending)
-			if len(update.Changes) > 0 {
+			if len(update.Changes) > 0 || update.Entries != nil {
 				select {
 				case updates <- update:
 				case <-ctx.Done():
@@ -166,6 +175,16 @@ func (w *Watcher) scan() ([]Entry, error) {
 			}
 			return err
 		}
+		relative, err := filepath.Rel(w.Root, path)
+		if err != nil {
+			return err
+		}
+		if w.ignore.Matches(relative, info.IsDir()) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
 		if info.IsDir() {
 			if !watched[path] {
 				if err := w.backend.Add(path); err != nil {
@@ -176,10 +195,6 @@ func (w *Watcher) scan() ([]Entry, error) {
 				}
 			}
 			directories[path] = true
-		}
-		relative, err := filepath.Rel(w.Root, path)
-		if err != nil {
-			return err
 		}
 		entries = append(entries, Entry{
 			Path: relative, Mode: info.Mode(), Size: info.Size(), ModTime: info.ModTime(),

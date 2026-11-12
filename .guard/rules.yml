@@ -1,0 +1,14 @@
+version: 1
+timeout_ms: 100
+include:
+  - "**/*.go"
+  - "**/*.js"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.py"
+  - "**/*.rs"
+rules:
+  - id: merge-conflict-markers
+    type: regex
+    message: Resolve the merge conflict before continuing.
+    pattern: '(?m)^(<<<<<<< |=======$|>>>>>>> )'

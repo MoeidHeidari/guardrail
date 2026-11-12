@@ -41,13 +41,17 @@ the [issue tracker](https://github.com/MoeidHeidari/guardrail/issues).
 
 - Watching observes saved filesystem state; it is not a sandbox or access-control
   system and does not prevent an editor or agent from writing files.
-- All entries in the chosen context are included, including hidden and ignored
-  paths. Choose a context you intend to display in the terminal.
+- Entries in the chosen context include hidden and Git-ignored paths unless
+  `.guardignore` excludes them. Choose a context you intend to display.
 - Screenshots, recordings, and logs can expose file names, paths, and content.
   Redact them before sharing.
 - Preview reads are bounded and non-regular/symlink files are rejected.
 - Resource limits and event overflow are reported as errors; automatic recovery
   is not implemented.
-- Repository rule enforcement, executable rule configuration, and agent
-  integrations are not available yet. Do not rely on Guardrail to enforce a
-  security policy or block a merge.
+- JavaScript rules run in embedded Goja without host filesystem/network/process
+  APIs. Execute only trusted repository configuration: execution deadlines and
+  stack limits are not process/memory isolation or a secure sandbox.
+- Rule scripts are contained in `.guard/` or `.guardrail/`; the watcher still
+  displays all context entries. See [Rules and checking](RULES.md) for limits.
+- Checks do not block edits or merges by themselves. Configure CI exit-code
+  handling explicitly; agent/editor integrations are not implemented.

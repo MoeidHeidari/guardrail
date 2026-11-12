@@ -34,7 +34,6 @@ func TestHelp(t *testing.T) {
 
 func TestRejectUnsupportedCommandsAndFlags(t *testing.T) {
 	for _, args := range [][]string{
-		{"check"},
 		{"greet"},
 		{"version"},
 		{"rules"},

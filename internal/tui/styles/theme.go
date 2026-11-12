@@ -26,20 +26,20 @@ type Theme struct {
 func Default() Theme {
 	return Theme{
 		Syntax:          "onedark",
-		Background:      tui.RGBColor(24, 26, 31),
-		Surface:         tui.RGBColor(29, 31, 37),
+		Background:      tui.RGBColor(8, 20, 33),
+		Surface:         tui.RGBColor(10, 24, 39),
 		Foreground:      tui.RGBColor(215, 220, 229),
 		Muted:           tui.RGBColor(137, 145, 161),
-		Accent:          tui.RGBColor(130, 170, 255),
+		Accent:          tui.RGBColor(110, 190, 255),
 		Added:           tui.RGBColor(152, 195, 121),
 		Modified:        tui.RGBColor(229, 192, 123),
 		Activity:        tui.RGBColor(198, 120, 221),
-		Chrome:          tui.RGBColor(24, 26, 31),
-		Navbar:          tui.RGBColor(33, 37, 46),
+		Chrome:          tui.RGBColor(8, 20, 33),
+		Navbar:          tui.RGBColor(11, 27, 43),
 		Danger:          tui.RGBColor(224, 108, 117),
-		Selection:       tui.RGBColor(37, 46, 63),
-		ActiveSelection: tui.RGBColor(51, 40, 65),
-		Separator:       tui.RGBColor(42, 45, 54),
+		Selection:       tui.RGBColor(14, 47, 77),
+		ActiveSelection: tui.RGBColor(42, 30, 60),
+		Separator:       tui.RGBColor(31, 57, 81),
 	}
 }
 
