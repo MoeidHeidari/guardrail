@@ -32,7 +32,11 @@ func TestSubtreeReconciliationDoesNotInspectUnrelatedPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer w.Close()
+	t.Cleanup(func() {
+		if err := w.Close(); err != nil {
+			t.Error(err)
+		}
+	})
 	original := w.index["untouched"]
 	// Deliberately omit the unrelated write from this batch. If reconciliation
 	// scans the whole context it would incorrectly include it in this delta.

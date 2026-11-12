@@ -70,7 +70,7 @@ func TestIgnoreDiscoveryAndLiveReload(t *testing.T) {
 			if update.Entries != nil {
 				found := false
 				for _, entry := range update.Entries {
-					found = found || entry.Path == "cache/hidden.go"
+					found = found || entry.Path == filepath.Join("cache", "hidden.go")
 				}
 				if !found {
 					t.Fatal("unignored files not discovered")

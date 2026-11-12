@@ -1,0 +1,117 @@
+name: Publish release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-release
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/quality.yml
+
+  version:
+    needs: quality
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Plan semantic release
+        id: plan
+        run: node .github/scripts/version.mjs
+      - uses: actions/upload-artifact@v4
+        if: steps.plan.outputs.version != ''
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  binaries:
+    needs: version
+    if: needs.version.outputs.version != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-24.04, goos: linux, goarch: amd64}
+          - {os: ubuntu-24.04-arm, goos: linux, goarch: arm64}
+          - {os: macos-15-intel, goos: darwin, goarch: amd64}
+          - {os: macos-15, goos: darwin, goarch: arm64}
+          - {os: windows-2025, goos: windows, goarch: amd64}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          install: mingw-w64-x86_64-gcc
+          update: false
+      - name: Configure Windows C compiler
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: cygpath -w /mingw64/bin >> "$GITHUB_PATH"
+      - name: Build archive
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          CGO_ENABLED: '1'
+          CC: gcc
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          suffix=""
+          if [ "$GOOS" = windows ]; then suffix=".exe"; fi
+          mkdir package
+          go build -trimpath \
+            -ldflags "-s -w -X github.com/MoeidHeidari/guardrail/internal/cli.Version=$VERSION -X github.com/MoeidHeidari/guardrail/internal/cli.Commit=$GITHUB_SHA" \
+            -o "package/guardrail$suffix" ./cmd/guardrail
+          "./package/guardrail$suffix" --version
+          cp LICENSE README.md package/
+          tar -czf "guardrail_${VERSION}_${GOOS}_${GOARCH}.tar.gz" -C package .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: guardrail_*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    needs: [version, binaries]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          path: assets
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: notes
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          cd assets
+          test "$(find . -name 'guardrail_*.tar.gz' | wc -l)" -eq 5
+          sha256sum guardrail_*.tar.gz > SHA256SUMS
+          gh release create "$VERSION" \
+            --target "$GITHUB_SHA" --title "$VERSION" \
+            --notes-file ../notes/release-notes.md \
+            guardrail_*.tar.gz SHA256SUMS

@@ -38,27 +38,29 @@ func TestMetadataDeltaPreservesTreeStorage(t *testing.T) {
 
 func TestStructuralDeltasMaintainHierarchy(t *testing.T) {
 	m := testScreen()
+	directory := filepath.Join("src", "added")
+	file := filepath.Join(directory, "new.go")
 	m.Apply(watcher.Update{
-		Upsert:  []watcher.Entry{{Path: "src/added", Mode: os.ModeDir}, {Path: "src/added/new.go"}},
-		Changes: []watcher.Change{{Path: "src/added", Kind: "created"}, {Path: "src/added/new.go", Kind: "created"}},
+		Upsert:  []watcher.Entry{{Path: directory, Mode: os.ModeDir}, {Path: file}},
+		Changes: []watcher.Change{{Path: directory, Kind: "created"}, {Path: file, Kind: "created"}},
 	})
-	if !m.collapsed["src/added"] {
+	if !m.collapsed[directory] {
 		t.Fatal("new directories must be collapsed")
 	}
-	m.selected = m.rowPositions["src/added"]
+	m.selected = m.rowPositions[directory]
 	m.expand()
-	if _, visible := m.rowPositions["src/added/new.go"]; !visible {
+	if _, visible := m.rowPositions[file]; !visible {
 		t.Fatal("new child must be reachable through the cached hierarchy")
 	}
-	m.selected = m.rowPositions["src/added/new.go"]
+	m.selected = m.rowPositions[file]
 	m.Apply(watcher.Update{
-		Removed: []string{"src/added", "src/added/new.go"},
-		Changes: []watcher.Change{{Path: "src/added", Kind: "deleted"}, {Path: "src/added/new.go", Kind: "deleted"}},
+		Removed: []string{directory, file},
+		Changes: []watcher.Change{{Path: directory, Kind: "deleted"}, {Path: file, Kind: "deleted"}},
 	})
 	if m.rows[m.selected].entry.Path != "src" {
 		t.Fatal("deleted selected subtree must select surviving parent")
 	}
-	if _, retained := m.treeChildren["src/added"]; retained {
+	if _, retained := m.treeChildren[directory]; retained {
 		t.Fatal("deleted subtree must not remain in hierarchy cache")
 	}
 }

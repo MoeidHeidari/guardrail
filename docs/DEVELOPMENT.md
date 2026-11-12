@@ -41,8 +41,10 @@ make build
 git diff --check
 ```
 
-The repository does not currently pin a golangci-lint version or provide release
-automation. Do not assume a linter installation or a CI workflow exists.
+CI pins golangci-lint v2.6.2. Install that version to reproduce `make lint`.
+Pull-request quality checks and semantic GitHub releases are described in
+[Releasing](RELEASING.md). Node.js 22 is used only for CI versioning scripts;
+it is not required by the Guardrail runtime.
 Documentation-only changes do not need the Go test suite unless code behavior or
 testable examples also change; check Markdown links and instructions instead.
 
