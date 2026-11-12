@@ -1,9 +1,14 @@
 # Quality checks and releases
 
 Pull requests to `main` run formatting, the 300-line Go file convention,
-golangci-lint v2.6.2, vet, race tests with coverage, semantic-versioning tests,
+golangci-lint v2.6.2, vet, race tests with coverage, and semantic-versioning tests,
 without building release binaries. Go is selected from `go.mod`. The pinned linter is
 built with that Go toolchain so its binary can analyze the project's Go version.
+
+Quality tests currently run on Linux and macOS only. Windows quality testing is
+temporarily excluded because directory rename/recreation watcher tests still
+fail there. Windows release builds and version smoke tests remain enabled;
+a successful build does not certify Windows watcher behavior.
 
 ## Merge convention
 
