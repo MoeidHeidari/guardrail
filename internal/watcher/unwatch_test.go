@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"syscall"
 	"testing"
@@ -10,6 +11,9 @@ import (
 )
 
 func TestRemovedWatchErrors(t *testing.T) {
+	if removedWatch(fmt.Errorf("watch: %w", os.ErrNotExist)) != (runtime.GOOS == "windows") {
+		t.Fatal("Windows removal of deleted watch paths must tolerate missing files")
+	}
 	if !removedWatch(fmt.Errorf("watch: %w", fsnotify.ErrNonExistentWatch)) {
 		t.Fatal("already removed watches must be tolerated")
 	}

@@ -72,10 +72,11 @@ jobs:
         shell: msys2 {0}
         run: cygpath -w /mingw64/bin >> "$GITHUB_PATH"
       - name: Tests with race detection and coverage
+        shell: bash
         env:
           CGO_ENABLED: '1'
           CC: gcc
-        run: go test -race -coverprofile=coverage.out ./...
+        run: go test -race -coverprofile="coverage.out" ./...
       - name: Vet
         env:
           CGO_ENABLED: '1'

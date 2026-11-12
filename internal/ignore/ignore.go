@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
@@ -44,6 +45,10 @@ func Load(root string) (matcher *Matcher, err error) {
 		line := strings.TrimSuffix(scanner.Text(), "\r")
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
+		}
+		if runtime.GOOS == "windows" {
+			line = strings.ReplaceAll(line, `\#`, "[#]")
+			line = strings.ReplaceAll(line, `\!`, "[!]")
 		}
 		patterns = append(patterns, gitignore.ParsePattern(line, nil))
 	}
