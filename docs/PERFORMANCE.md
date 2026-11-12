@@ -49,14 +49,16 @@ replace pending work, not the running operation.
 | Preview work | One running request and one latest pending request |
 | Metadata and hierarchy indexes | Grow with tracked entries |
 | Filesystem resources | Depend on OS backend and context size |
-| Initial scan | Visits the entire context |
+| Initial scan | Visits the context, pruning `.guardignore` exclusions |
 
 Syntax spans and text for the selected preview are cached within the preview
 limits. File contents are not cached for the whole repository.
 
-There are currently **no automatic exclusions** for dependency directories,
-generated output, hidden files, or Git internals. Git ignore rules are not
-analysis or watch filters. Use a narrower context when appropriate.
+The root `.guardignore` excludes paths from watching, browsing, and checking.
+Ignored directories are pruned before allocating watches. Git's `.gitignore`
+files are not loaded automatically. Analysis also applies per-set YAML scopes
+and default dependency/generated exclusions. See [Rules](RULES.md) and
+[Ignore paths](WATCH.md#ignore-paths).
 
 ## Platform limits
 

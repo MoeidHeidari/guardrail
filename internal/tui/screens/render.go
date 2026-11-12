@@ -50,6 +50,8 @@ func (m *Main) advanceAnimation(now time.Time) bool {
 
 var dotFrames = [...]string{".   ", "..  ", "... ", " .. "}
 
+const treeRowHeight = 1
+
 func (m *Main) Render(app *tui.App) *tui.Element {
 	if m.animationOnly && m.cachedRoot != nil {
 		m.animationOnly = false
@@ -59,19 +61,28 @@ func (m *Main) Render(app *tui.App) *tui.Element {
 	m.animationText = make(map[string]string)
 	m.animationIndent = make(map[string]string)
 	if app != nil {
-		_, m.renderHeight = app.Size()
+		m.renderWidth, m.renderHeight = app.Size()
 	}
 	dragTree := m.dragPane != nil && m.dragPane == m.tree
 	dragFeed := m.dragPane != nil && m.dragPane == m.feed
+	dragWatch := m.dragPane != nil && m.dragPane == m.watchPane
+	dragOverviewList := m.dragPane != nil && m.dragPane == m.overviewList
+	dragOverviewPreview := m.dragPane != nil && m.dragPane == m.overviewPreview
+	rulesDrag := -1
+	for i, pane := range []*tui.Element{m.rulesList, m.rulesFiles, m.rulesPreview} {
+		if m.dragPane != nil && m.dragPane == pane {
+			rulesDrag = i
+		}
+	}
 	header := components.NewHeader(m.theme, "GUARDRAIL", display(filepath.Base(m.root))+"  /  workspace")
 	m.tree = components.NewContainer(m.theme, tui.WithFlexGrow(1),
 		tui.WithHeight(0), tui.WithScrollable(tui.ScrollVertical),
 		tui.WithScrollOffset(0, m.treeOffset))
 	m.styleScrollbar(m.tree)
-	start := min(m.treeOffset, len(m.rows))
+	start := min(m.treeOffset/treeRowHeight, len(m.rows))
 	end := min(len(m.rows), start+max(100, m.renderHeight))
 	if start > 0 {
-		m.tree.AddChild(tui.New(tui.WithHeight(start), tui.WithFlexShrink(0)))
+		m.tree.AddChild(tui.New(tui.WithHeight(start*treeRowHeight), tui.WithFlexShrink(0)))
 	}
 	for i := start; i < end; i++ {
 		row := m.rows[i]
@@ -111,7 +122,7 @@ func (m *Main) Render(app *tui.App) *tui.Element {
 				background = m.theme.ActiveSelection
 				foreground = m.theme.Activity
 			}
-			if m.changesFocus {
+			if m.changesFocus || m.navigationFocus || m.watchFocus {
 				background = m.theme.Chrome
 				foreground = m.theme.Accent
 				if changing {
@@ -121,6 +132,14 @@ func (m *Main) Render(app *tui.App) *tui.Element {
 			el.Apply(tui.WithTextStyle(tui.Style{Fg: foreground, Bg: background}),
 				tui.WithBackground(tui.Style{Bg: background}))
 		}
+		background := m.theme.Selection
+		if changing {
+			background = m.theme.ActiveSelection
+		}
+		if m.changesFocus || m.navigationFocus || m.watchFocus {
+			background = m.theme.Chrome
+		}
+		m.styleSidebarRow(el, i == m.selected, background)
 		m.tree.AddChild(el)
 		if changing && active {
 			m.animationRows[row.entry.Path] = el
@@ -129,36 +148,43 @@ func (m *Main) Render(app *tui.App) *tui.Element {
 		}
 	}
 	if end < len(m.rows) {
-		m.tree.AddChild(tui.New(tui.WithHeight(len(m.rows)-end), tui.WithFlexShrink(0)))
+		m.tree.AddChild(tui.New(tui.WithHeight((len(m.rows)-end)*treeRowHeight), tui.WithFlexShrink(0)))
 	}
-	treeTitle := "Context"
-	treeHeading := m.label(treeTitle)
-	treeHeading.Apply(tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Muted).Bold()))
-	if !m.changesFocus {
-		treeHeading.Apply(tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Accent).Bold()))
-	}
-	sidebar := components.NewSection(m.theme, "", treeHeading, m.tree)
-	sidebar.Apply(tui.WithPaddingTRBL(1, 2, 1, 2))
+	sidebar := m.renderSidebar()
 	content := m.renderPanel()
 	if dragTree {
 		m.dragPane = m.tree
 	} else if dragFeed {
 		m.dragPane = m.feed
+	} else if dragWatch {
+		m.dragPane = m.watchPane
+	} else if dragOverviewList {
+		m.dragPane = m.overviewList
+	} else if dragOverviewPreview {
+		m.dragPane = m.overviewPreview
+	} else if rulesDrag >= 0 {
+		m.dragPane = []*tui.Element{m.rulesList, m.rulesFiles, m.rulesPreview}[rulesDrag]
 	}
 	focus := "Context"
+	if m.navigationFocus {
+		focus = "Navigation"
+	}
 	if m.changesFocus {
 		focus = "Watch"
 		if m.contentTab {
 			focus = "Content"
 		} else if m.dashboardVisible() {
-			focus = "Dashboard"
+			focus = workspaceLabels[m.workspacePage]
 		}
+	}
+	if m.watchFocus {
+		focus = "Watch"
 	}
 	status := m.label(fmt.Sprintf("Watching   %d files & folders   %d changed   /   %s", len(m.entries), m.changedFiles, focus))
 	status.Apply(tui.WithMinWidth(0), tui.WithFlexShrink(1))
 	status.Apply(tui.WithBackground(tui.Style{Bg: m.theme.Chrome}),
 		tui.WithTextStyle(tui.Style{Fg: m.theme.Muted}))
-	hint := "0/1/2 tabs   Tab focus   Enter open   q quit"
+	hint := "0 workspace   1 activity   2 content   Tab focus   q quit"
 	if app != nil {
 		width, _ := app.Size()
 		if width < 90 {

@@ -79,9 +79,11 @@ func TestTreeRenderingBoundedAndNavigable(t *testing.T) {
 		t.Fatalf("last entry must remain reachable:\n%s", frame)
 	}
 	rect := m.tree.ContentRect()
+	_, offset := m.tree.ScrollOffset()
+	expected := offset / treeRowHeight
 	m.HandleMouse(tui.MouseEvent{Button: tui.MouseLeft, X: rect.X, Y: rect.Y})
-	if m.selected != m.treeOffset {
-		t.Fatal("mouse must select the correct logical row in a virtualized tree")
+	if m.selected != expected {
+		t.Fatalf("mouse selected %d, want %d; tree=%+v offset=%d", m.selected, expected, rect, m.treeOffset)
 	}
 }
 

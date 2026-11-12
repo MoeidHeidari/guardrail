@@ -143,6 +143,8 @@ func fileScreen(t *testing.T, code string) *Main {
 		t.Fatal(err)
 	}
 	m.selected = 1
+	m.navigationFocus = false
+	m.contentOpened = true
 	return m
 }
 
@@ -175,8 +177,8 @@ func TestContentTabsAndLiveReload(t *testing.T) {
 	}
 	pressRune(t, m, '1')
 	frame = render(m, 120, 24)
-	if m.contentTab || !strings.Contains(frame, "modified") {
-		t.Fatal("1 must switch back to Watch")
+	if !m.contentTab || !m.watchFocus || !strings.Contains(frame, "M main.go") {
+		t.Fatal("1 must focus sidebar Watch without replacing Content")
 	}
 	rect := m.contentTabButton.Rect()
 	if !m.HandleMouse(tui.MouseEvent{Button: tui.MouseLeft, X: rect.X, Y: rect.Y}) || !m.contentTab {
@@ -185,11 +187,11 @@ func TestContentTabsAndLiveReload(t *testing.T) {
 	render(m, 120, 24)
 	rect = m.watchTabButton.Rect()
 	m.HandleMouse(tui.MouseEvent{Button: tui.MouseLeft, X: rect.X, Y: rect.Y})
-	if m.contentTab {
-		t.Fatal("watch tab must be clickable")
+	if !m.contentTab || !m.watchFocus {
+		t.Fatal("Watch must focus sidebar activity without replacing Content")
 	}
 	rect = m.tree.ContentRect()
-	m.HandleMouse(tui.MouseEvent{Button: tui.MouseLeft, X: rect.X, Y: rect.Y + 1})
+	m.HandleMouse(tui.MouseEvent{Button: tui.MouseLeft, X: rect.X, Y: rect.Y + treeRowHeight})
 	if !m.contentTab {
 		t.Fatal("clicking a file must open Content")
 	}
@@ -257,6 +259,7 @@ func TestContentLongLinesAndSelection(t *testing.T) {
 	if !strings.Contains(frame, "TAIL") {
 		t.Fatalf("horizontal scrolling must reveal end of source:\n%s", frame)
 	}
+	press(t, m, tui.KeyTab)
 	press(t, m, tui.KeyTab)
 	press(t, m, tui.KeyHome)
 	frame = render(m, 120, 24)

@@ -1,7 +1,7 @@
 # Guardrail documentation
 
-Guardrail's current deliverable is a live filesystem workspace. The standards
-engine, rule configuration, agent feedback, and CI analysis are planned.
+Guardrail provides a live filesystem workspace, Tree-sitter parsing, regex and
+JavaScript rules, and noninteractive checking. Agent/editor integrations remain planned.
 
 ## For users
 
@@ -11,6 +11,7 @@ engine, rule configuration, agent feedback, and CI analysis are planned.
 3. [Performance and limits](PERFORMANCE.md): how watching works and what to expect
    in large repositories.
 4. [Support](SUPPORT.md): troubleshooting, bug reports, and feature requests.
+5. [Rules and checking](RULES.md): YAML, custom functions, parsing, and check reports.
 
 ## For contributors
 

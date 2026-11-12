@@ -14,6 +14,7 @@ import (
 func TestContextStartsExpandedOneLevel(t *testing.T) {
 	initial := testScreen().entries
 	m := NewMain(styles.Default(), "/workspace", watcher.Update{Entries: initial})
+	m.navigationFocus = false
 	if len(m.rows) != 3 || m.collapsed["."] || !m.collapsed["src"] {
 		t.Fatal("root must start expanded with child folders collapsed")
 	}

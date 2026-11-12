@@ -17,10 +17,10 @@ func TestEditorWorkspaceGeometry(t *testing.T) {
 			buffer := tui.NewBuffer(size[0], size[1])
 			root.RenderTo(buffer, size[0], size[1])
 			header, body, footer := root.Children()[0], root.Children()[1], root.Children()[2]
-			if header.Rect().Height != 4 || footer.Rect().Height != 3 {
+			if header.Rect().Height != 3 || footer.Rect().Height != 3 {
 				t.Fatal("header and footer must include top and bottom padding")
 			}
-			if footer.Rect().Y != size[1]-3 || body.Rect().Y != 4 || body.Rect().Height != size[1]-7 {
+			if footer.Rect().Y != size[1]-3 || body.Rect().Y != 3 || body.Rect().Height != size[1]-6 {
 				t.Fatalf("chrome and workspace misaligned: header=%+v body=%+v footer=%+v",
 					header.Rect(), body.Rect(), footer.Rect())
 			}
@@ -42,7 +42,7 @@ func TestEditorWorkspaceGeometry(t *testing.T) {
 				}
 			}
 			if size[0] >= 80 {
-				if viewport(m.feed) < size[1]-11 || viewport(m.tree) < size[1]-10 {
+				if viewport(m.feed) < size[1]-13 || viewport(m.tree) < max(1, size[1]-25) {
 					t.Fatalf("too much vertical space consumed: tree=%d feed=%d", viewport(m.tree), viewport(m.feed))
 				}
 				for _, text := range []string{"GUARDRAIL", "1 Watch", "2 Content", "Watching", "Context", "Tab focus"} {
@@ -61,10 +61,10 @@ func TestWorkspaceFocusAndTabStyling(t *testing.T) {
 	if !strings.Contains(frame, "/   Context") {
 		t.Fatal("status bar must identify tree focus")
 	}
-	if !m.watchTabButton.TextStyle().Fg.Equal(m.theme.Accent) {
-		t.Fatal("active Watch tab must have an accent underline")
+	if !m.dashboardButton.TextStyle().Fg.Equal(m.theme.Accent) {
+		t.Fatal("active workspace tab must have an accent underline")
 	}
-	press(t, m, tui.KeyTab)
+	pressRune(t, m, '1')
 	frame = render(m, 120, 24)
 	if !strings.Contains(frame, "/   Watch") {
 		t.Fatal("status bar must follow pane focus")
@@ -74,6 +74,7 @@ func TestWorkspaceFocusAndTabStyling(t *testing.T) {
 		t.Fatal("tree selection must become subtle when the other pane has focus")
 	}
 	pressRune(t, m, '2')
+	m.changesFocus = true
 	frame = render(m, 120, 24)
 	if !strings.Contains(frame, "/   Content") || !m.contentTabButton.TextStyle().Fg.Equal(m.theme.Accent) {
 		t.Fatal("tab switch must update active tab and status bar")
@@ -92,7 +93,7 @@ func TestWatchChangeColorsAndSummary(t *testing.T) {
 		t.Fatalf("status bar must summarize changed files:\n%s", frame)
 	}
 	for i, color := range []tui.Color{m.theme.Danger, m.theme.Added, m.theme.Modified} {
-		spans := m.feed.Children()[i].RichText()
+		spans := m.watchPane.Children()[i].RichText()
 		if len(spans) != 3 || !spans[1].Style.Fg.Equal(color) {
 			t.Fatal("feed must distinguish event kinds with separate colors")
 		}

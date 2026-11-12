@@ -20,6 +20,8 @@ func testScreen() *Main {
 		{Path: "README.md"},
 	}})
 	m.dashboardTab = false
+	m.navigationFocus = false
+	m.contentOpened = true
 	for path := range m.collapsed {
 		m.collapsed[path] = false
 	}
@@ -28,6 +30,8 @@ func testScreen() *Main {
 }
 
 func render(m *Main, width, height int) string {
+	m.renderWidth = width
+	m.renderHeight = height
 	buffer := tui.NewBuffer(width, height)
 	m.Render(nil).RenderTo(buffer, width, height)
 	return buffer.StringTrimmed()
@@ -46,9 +50,9 @@ func press(t *testing.T, m *Main, key tui.Key) {
 
 func TestMainScreen(t *testing.T) {
 	m := testScreen()
-	frame := render(m, 120, 24)
+	frame := render(m, 120, 40)
 	for _, text := range []string{"GUARDRAIL", "Context", "Watch", "/workspace",
-		"workspace/", "src/", "main.go", "README.md", "Watching for filesystem changes", "q quit"} {
+		"workspace/", "src/", "main.go", "README.md", "Waiting for saved changes", "q quit"} {
 		if !strings.Contains(frame, text) {
 			t.Errorf("missing %q:\n%s", text, frame)
 		}
@@ -103,7 +107,7 @@ func TestLiveUpdatesPreserveSelection(t *testing.T) {
 	update.Changes = []watcher.Change{{Path: "src/new.go", Kind: "created", Time: time.Now()}}
 	m.Apply(update)
 	frame := render(m, 120, 24)
-	if !strings.Contains(frame, "created") || !strings.Contains(frame, "src/new.go") {
+	if !strings.Contains(frame, "A src/new.go") {
 		t.Fatalf("live change missing:\n%s", frame)
 	}
 	if m.rows[m.selected].entry.Path != "src/main.go" {
@@ -134,7 +138,7 @@ func TestChangesScrollPreservesHistoryPosition(t *testing.T) {
 	}
 	m.Apply(watcher.Update{Entries: m.entries, Changes: changes})
 	render(m, 120, 24)
-	m.changesFocus = true
+	m.watchFocus = true
 	m.move(5)
 	previous := m.changes[len(m.changes)-1-m.changeOffset].Path
 	m.Apply(watcher.Update{Entries: m.entries, Changes: []watcher.Change{{Path: "new"}}})
@@ -154,24 +158,24 @@ func TestMouseAndScrolling(t *testing.T) {
 		m.entries = append(m.entries, watcher.Entry{Path: fmt.Sprintf("file%02d", i)})
 	}
 	m.rebuildRows()
-	render(m, 120, 24)
+	render(m, 120, 40)
 	row := m.tree.ContentRect()
-	if !m.HandleMouse(tui.MouseEvent{Button: tui.MouseLeft, X: row.X, Y: row.Y + 1}) {
+	if !m.HandleMouse(tui.MouseEvent{Button: tui.MouseLeft, X: row.X, Y: row.Y + treeRowHeight}) {
 		t.Fatal("tree click not handled")
 	}
 	if m.selected != 1 || !m.collapsed["src"] {
 		t.Fatal("click must select and toggle directory")
 	}
-	render(m, 120, 24)
+	render(m, 120, 40)
 	rect := m.tree.Rect()
 	m.HandleMouse(tui.MouseEvent{Button: tui.MouseWheelDown, X: rect.X, Y: rect.Y})
 	if m.treeOffset != 3 {
 		t.Fatalf("wheel did not scroll: %d", m.treeOffset)
 	}
 	press(t, m, tui.KeyEnd)
-	render(m, 120, 24)
+	render(m, 120, 40)
 	_, offset := m.tree.ScrollOffset()
-	if m.selected < offset || m.selected >= offset+viewport(m.tree) {
+	if m.selected*treeRowHeight < offset || m.selected*treeRowHeight >= offset+viewport(m.tree) {
 		t.Fatal("keyboard selection must scroll into view")
 	}
 	press(t, m, tui.KeyTab)
@@ -180,13 +184,13 @@ func TestMouseAndScrolling(t *testing.T) {
 	}
 	m.changes = make([]watcher.Change, 50)
 	render(m, 120, 24)
-	rect = m.feed.Rect()
+	rect = m.watchPane.Rect()
 	m.HandleMouse(tui.MouseEvent{Button: tui.MouseWheelDown, X: rect.X, Y: rect.Y})
 	if m.changeOffset != 3 {
 		t.Fatal("wheel must scroll change feed")
 	}
 	press(t, m, tui.KeyEnd)
-	if m.changeOffset != len(m.changes)-viewport(m.feed) {
+	if m.changeOffset != len(m.changes)-viewport(m.watchPane) {
 		t.Fatal("end must scroll to oldest retained change")
 	}
 }
@@ -220,13 +224,13 @@ func TestSidebarChangeMarkers(t *testing.T) {
 	m := testScreen()
 	m.collapsed["src"] = true
 	m.Apply(watcher.Update{Entries: m.entries, Changes: []watcher.Change{{Path: "src/main.go", Kind: "modified"}}})
-	frame := render(m, 120, 24)
+	frame := render(m, 120, 40)
 	if !strings.Contains(frame, "[*] src/") || m.status["src/main.go"] != "M" {
 		t.Fatalf("changed file and collapsed parent must be marked:\n%s", frame)
 	}
 	m.collapsed["src"] = false
 	m.rebuildRows()
-	frame = render(m, 120, 24)
+	frame = render(m, 120, 40)
 	if !strings.Contains(frame, "[M] main.go") {
 		t.Fatalf("modified file badge missing:\n%s", frame)
 	}

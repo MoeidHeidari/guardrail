@@ -50,8 +50,9 @@ func (m *Main) StartPreviewWorker(parent context.Context) (<-chan PreviewResult,
 				default:
 				}
 				worker := &Main{
-					theme: request.theme,
-					root:  request.root, rows: []treeRow{{entry: request.entry}},
+					contentTab: true,
+					theme:      request.theme,
+					root:       request.root, rows: []treeRow{{entry: request.entry}},
 					preview: request.previous, previewDirty: true,
 					contentX: request.x, contentOffset: request.y,
 				}
@@ -73,10 +74,10 @@ func (m *Main) StartPreviewWorker(parent context.Context) (<-chan PreviewResult,
 }
 
 func (m *Main) requestPreview() {
-	if len(m.rows) == 0 {
+	entry, exists := m.previewEntry()
+	if !exists {
 		return
 	}
-	entry := m.rows[m.selected].entry
 	if entry.Path == m.requestedPath && !m.previewDirty {
 		return
 	}
@@ -99,11 +100,20 @@ func (m *Main) requestPreview() {
 }
 
 func (m *Main) ApplyPreview(result PreviewResult) bool {
-	if result.id != m.previewID || m.previewDirty || len(m.rows) == 0 ||
-		m.rows[m.selected].entry.Path != result.preview.path {
+	entry, exists := m.previewEntry()
+	if result.id != m.previewID || m.previewDirty || !exists ||
+		entry.Path != result.preview.path {
 		return false
 	}
 	m.animationOnly = false
+	feed := m.feed
+	if m.overviewVisible() && m.overviewPreview != nil {
+		m.feed = m.overviewPreview
+	}
+	if m.rulesVisible() && m.rulesPreview != nil {
+		m.feed = m.rulesPreview
+	}
+	defer func() { m.feed = feed }()
 	changed := m.preview.code != result.preview.code
 	m.preview = result.preview
 	m.contentOffset = min(m.contentOffset, max(0, len(m.preview.lines)-viewport(m.feed)))
@@ -111,5 +121,6 @@ func (m *Main) ApplyPreview(result PreviewResult) bool {
 	if changed {
 		m.followCursor()
 	}
+	m.applyFindingJump()
 	return true
 }

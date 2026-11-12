@@ -6,6 +6,8 @@
 
 - Go 1.26.2 or newer, as specified by [go.mod](../go.mod).
 - Git to clone the repository.
+- A C compiler with CGO enabled for Tree-sitter. On macOS install Xcode Command
+  Line Tools (`xcode-select --install`) if needed. Node.js is not required.
 - An interactive terminal. Mouse interaction requires terminal mouse reporting;
   keyboard navigation is also available.
 - Read access to the chosen context and enough OS filesystem-watch resources.
@@ -66,22 +68,24 @@ A symlink supplied as the root is resolved to its target.
 ## First session
 
 1. Start `watch` in the project you want to monitor.
-2. Dashboard opens with a workspace summary.
+2. Overview opens with a workspace summary; navigation is above the context tree.
 3. The context root is expanded; its immediate files and folders are visible.
 4. Expand a child folder with Right, `Enter`, or a click.
 5. Select a file and press `Enter` to open Content.
 6. Edit and save that file in your editor. Guardrail shows its activity and
    refreshes the preview.
-7. Press `1` to inspect recent events, `0` to return to Dashboard, or `q` to quit.
+7. Press `1` to focus sidebar activity without replacing Content, `0` to return
+   to the workspace page, or `q` to quit.
 
 Guardrail previews files but does not edit them. You do not need an AI coding agent
 to use watching, and filesystem activity does not identify who authored an edit.
 
-## Configuration status
+## Configure analysis
 
-There is no rule configuration loader yet. A `.guardrail.yml` file currently has
-no effect. The proposed standards engine and configuration work are described in
-[Architecture and roadmap](ARCHITECTURE.md).
+Add YAML rule sets under `.guard/` and functions under `.guard/` or `.guardrail/`.
+See [Rules and checking](RULES.md) for complete examples. Watch remains usable
+without configuration, but explicitly reports that analysis is unavailable.
+Use `guardrail check [context-path] --format json` for noninteractive reports.
 
 ## Troubleshooting
 
@@ -92,7 +96,7 @@ no effect. The proposed standards engine and configuration work are described in
 | Theme does not match | Restart after changing the terminal theme. Detection falls back to `COLORFGBG`, then dark mode. |
 | Empty space outside the entire TUI | The terminal emulator may add window padding outside its character grid; Guardrail cannot draw there. |
 | Preview is unavailable | Check the message in Content: the file may be binary, a symlink, too large, or unreadable. |
-| Startup is slow | Initial discovery visits the whole context, including dependency folders and Git internals. |
+| Startup is slow | Exclude large dependency/generated folders and Git metadata using root `.guardignore`. |
 | Watch setup fails | Inspect the reported permission, watch-limit, or open-file-limit error. Try a narrower context. |
 | Context disappears | Removing or renaming the root ends the session with an error; restart on a valid path. |
 

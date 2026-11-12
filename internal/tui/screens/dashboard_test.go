@@ -16,11 +16,12 @@ func TestDashboardDefaultAndNavigation(t *testing.T) {
 		!m.dashboardButton.TextStyle().Fg.Equal(m.theme.Accent) {
 		t.Fatal("Dashboard must be the default main tab")
 	}
-	for _, tab := range []*tui.Element{m.dashboardButton, m.watchTabButton, m.contentTabButton} {
+	for _, tab := range []*tui.Element{m.dashboardButton, m.watchTabButton} {
 		if !strings.Contains(frame, tab.Text()) {
 			t.Fatalf("tab %q must always be available", tab.Text())
 		}
 	}
+	press(t, m, tui.KeyTab)
 	press(t, m, tui.KeyTab)
 	press(t, m, tui.KeyEnd)
 	if m.changeOffset != 0 || m.contentOffset != 0 {
@@ -28,16 +29,22 @@ func TestDashboardDefaultAndNavigation(t *testing.T) {
 	}
 	pressRune(t, m, '1')
 	frame = render(m, 120, 32)
-	if m.dashboardVisible() || !strings.Contains(frame, "Watching for filesystem changes") {
-		t.Fatal("Watch shortcut must leave Dashboard")
+	if !m.dashboardVisible() || !m.watchFocus || !strings.Contains(frame, "Waiting for saved changes") {
+		t.Fatal("Watch shortcut must focus sidebar activity without replacing Dashboard")
 	}
 	button := m.dashboardButton.Rect()
 	m.HandleMouse(tui.MouseEvent{Button: tui.MouseLeft, X: button.X, Y: button.Y})
 	frame = render(m, 120, 32)
-	if !m.dashboardVisible() || !strings.Contains(frame, "/   Dashboard") {
+	if !m.dashboardVisible() || !strings.Contains(frame, "/   Overview") {
 		t.Fatal("Dashboard mouse tab must restore dashboard and focus label")
 	}
 	pressRune(t, m, '2')
+	if m.contentTabButton != nil || m.contentTab {
+		t.Fatal("Content must not open before the first file is opened")
+	}
+	m.changesFocus = false
+	m.selected = m.rowPositions["README.md"]
+	press(t, m, tui.KeyEnter)
 	render(m, 120, 32)
 	if m.dashboardVisible() || !m.contentTab {
 		t.Fatal("Content shortcut must leave Dashboard")
@@ -70,7 +77,7 @@ func TestWorkspaceHasNoOuterMargins(t *testing.T) {
 	root.RenderTo(buffer, 120, 32)
 	header, body, footer := root.Children()[0], root.Children()[1], root.Children()[2]
 	if header.Rect().X != 0 || header.Rect().Y != 0 || header.Rect().Right() != 120 ||
-		header.Rect().Height != 4 || footer.Rect().X != 0 || footer.Rect().Right() != 120 ||
+		header.Rect().Height != 3 || footer.Rect().X != 0 || footer.Rect().Right() != 120 ||
 		footer.Rect().Bottom() != 32 || body.Rect().X != 0 || body.Rect().Right() != 120 {
 		t.Fatal("workspace must fill the terminal with no outer empty bands")
 	}
@@ -80,7 +87,7 @@ func TestWorkspaceHasNoOuterMargins(t *testing.T) {
 		}
 		if header.Children()[0].Rect().Y < 1 || header.Children()[0].Rect().Bottom() >= header.Rect().Bottom() ||
 			footer.Children()[0].Rect().Y != 30 ||
-			m.tree.Rect().Bottom() != body.Rect().Bottom()-1 || m.feed.Rect().Bottom() != body.Rect().Bottom()-1 {
+			m.watchPane.Rect().Bottom() != body.Rect().Bottom()-1 || m.feed.Rect().Bottom() != body.Rect().Bottom()-1 {
 			t.Fatal("top and bottom spacing must be internal padding, not outer margins")
 		}
 	}

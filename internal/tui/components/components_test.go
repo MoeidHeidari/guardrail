@@ -94,8 +94,8 @@ func TestLayoutResizes(t *testing.T) {
 			root.MarkDirty()
 			root.Calculate(size.width, size.height)
 			h, s, c := header.Rect(), sidebar.Rect(), content.Rect()
-			if h.Height != 4 {
-				t.Errorf("header height = %d, want 4", h.Height)
+			if h.Height != 3 {
+				t.Errorf("header height = %d, want 3", h.Height)
 			}
 			if s.Y != h.Y+h.Height || s.Y != c.Y || s.Height != c.Height {
 				t.Errorf("body is not aligned below header: header=%+v sidebar=%+v content=%+v", h, s, c)

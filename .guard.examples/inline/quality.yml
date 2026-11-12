@@ -1,0 +1,16 @@
+version: 1
+include:
+  - "**/*.go"
+rules:
+  - id: merge-conflict-markers
+    type: regex
+    pattern: '(?m)^(<<<<<<< |=======$|>>>>>>> )'
+    message: Resolve merge conflict markers.
+  - id: max-source-lines
+    type: javascript
+    code: |
+      (path, content) => {
+        const lines = content.split(/\r?\n/);
+        const count = lines.length - (content.endsWith("\n") ? 1 : 0);
+        return count > 300;
+      }

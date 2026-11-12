@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"github.com/MoeidHeidari/guardrail/internal/analysis"
 	"github.com/MoeidHeidari/guardrail/internal/tui/styles"
 	"github.com/MoeidHeidari/guardrail/internal/watcher"
 	"github.com/grindlemire/go-tui"
@@ -17,49 +18,87 @@ type treeRow struct {
 }
 
 type Main struct {
-	theme            styles.Theme
-	root             string
-	entries          []watcher.Entry
-	rows             []treeRow
-	collapsed        map[string]bool
-	changes          []watcher.Change
-	selected         int
-	treeOffset       int
-	changeOffset     int
-	changesFocus     bool
-	tree             *tui.Element
-	feed             *tui.Element
-	status           map[string]string
-	contentTab       bool
-	dashboardTab     bool
-	dashboardButton  *tui.Element
-	contentOffset    int
-	contentX         int
-	preview          filePreview
-	previewDirty     bool
-	watchTabButton   *tui.Element
-	contentTabButton *tui.Element
-	animationFrame   int
-	activeUntil      map[string]time.Time
-	animationRows    map[string]*tui.Element
-	animationText    map[string]string
-	cachedRoot       *tui.Element
-	animationOnly    bool
-	dragPane         *tui.Element
-	dragGrab         int
-	renderHeight     int
-	animationIndent  map[string]string
-	entryPositions   map[string]int
-	rowPositions     map[string]int
-	changedFiles     int
-	previewRequests  chan previewRequest
-	previewID        uint64
-	requestedPath    string
-	treeChildren     map[string][]string
+	overviewPreviewOpened, rulesPreviewOpened bool
+	overviewLine, overviewColumn              int
+	collapsedRuleSets                         map[string]bool
+	selectedRuleSet                           string
+	rulesList                                 *tui.Element
+	rulesFiles                                *tui.Element
+	rulesPreview                              *tui.Element
+	rulesSelection                            int
+	rulesFileSelection                        int
+	rulesFocus                                int
+	rulesItems                                []ruleKey
+	rulesMatches                              []int
+	rulesPath                                 string
+	findingX                                  int
+	findingFilter                             string
+	filterButtons                             []*tui.Element
+	tableWidths                               []int
+	overviewList                              *tui.Element
+	overviewPreview                           *tui.Element
+	overviewPath                              string
+	overviewListX                             int
+	overviewPreviewFocus                      bool
+	renderWidth                               int
+	watchPane                                 *tui.Element
+	watchFocus                                bool
+	theme                                     styles.Theme
+	root                                      string
+	entries                                   []watcher.Entry
+	rows                                      []treeRow
+	collapsed                                 map[string]bool
+	changes                                   []watcher.Change
+	selected                                  int
+	treeOffset                                int
+	changeOffset                              int
+	changesFocus                              bool
+	tree                                      *tui.Element
+	feed                                      *tui.Element
+	status                                    map[string]string
+	contentTab                                bool
+	contentOpened                             bool
+	dashboardTab                              bool
+	dashboardButton                           *tui.Element
+	workspacePage                             workspacePage
+	navigationFocus                           bool
+	navigationIndex                           int
+	navigationItems                           []*tui.Element
+	contentOffset                             int
+	contentX                                  int
+	preview                                   filePreview
+	previewDirty                              bool
+	watchTabButton                            *tui.Element
+	contentTabButton                          *tui.Element
+	animationFrame                            int
+	activeUntil                               map[string]time.Time
+	animationRows                             map[string]*tui.Element
+	animationText                             map[string]string
+	cachedRoot                                *tui.Element
+	animationOnly                             bool
+	dragPane                                  *tui.Element
+	dragGrab                                  int
+	renderHeight                              int
+	animationIndent                           map[string]string
+	entryPositions                            map[string]int
+	rowPositions                              map[string]int
+	changedFiles                              int
+	previewRequests                           chan previewRequest
+	previewID                                 uint64
+	requestedPath                             string
+	treeChildren                              map[string][]string
+	analysisGeneration                        uint64
+	analysisPending                           bool
+	analysisResult                            analysis.LiveResult
+	findingIndex                              int
+	findingOffset                             int
+	findings                                  []analysis.Finding
+	jumpLine                                  int
+	jumpColumn                                int
 }
 
 func NewMain(theme styles.Theme, root string, initial watcher.Update) *Main {
-	m := &Main{theme: theme, root: root, dashboardTab: true, collapsed: map[string]bool{".": false}, status: make(map[string]string),
+	m := &Main{theme: theme, root: root, dashboardTab: true, navigationFocus: true, collapsed: map[string]bool{".": false}, status: make(map[string]string),
 		activeUntil: make(map[string]time.Time)}
 	m.Apply(initial)
 	return m
@@ -187,7 +226,7 @@ func (m *Main) Apply(update watcher.Update) {
 			m.flattenRows()
 		}
 	} else {
-		m.changeOffset = min(m.changeOffset, max(0, len(m.changes)-viewport(m.feed)))
+		m.changeOffset = min(m.changeOffset, max(0, len(m.changes)-viewport(m.watchPane)))
 		return
 	}
 	for {
@@ -201,6 +240,6 @@ func (m *Main) Apply(update watcher.Update) {
 		selectedPath = filepath.Dir(selectedPath)
 	}
 	m.selected = min(m.selected, max(0, len(m.rows)-1))
-	m.treeOffset = min(m.treeOffset, max(0, len(m.rows)-viewport(m.tree)))
-	m.changeOffset = min(m.changeOffset, max(0, len(m.changes)-viewport(m.feed)))
+	m.treeOffset = min(m.treeOffset, max(0, len(m.rows)*treeRowHeight-viewport(m.tree)))
+	m.changeOffset = min(m.changeOffset, max(0, len(m.changes)-viewport(m.watchPane)))
 }

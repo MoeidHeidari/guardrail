@@ -8,11 +8,11 @@ import (
 )
 
 func (m *Main) loadPreview() {
-	if len(m.rows) == 0 {
+	entry, exists := m.previewEntry()
+	if !exists {
 		m.preview = filePreview{message: "Select a file in the context tree."}
 		return
 	}
-	entry := m.rows[m.selected].entry
 	if entry.Path == m.preview.path && !m.previewDirty {
 		return
 	}
@@ -58,6 +58,7 @@ func (m *Main) loadPreview() {
 	if cursor := m.preview.cursor; cursor != nil && previous.code != code && err == nil {
 		m.followCursor()
 	}
+	m.applyFindingJump()
 }
 
 func (m *Main) followCursor() {

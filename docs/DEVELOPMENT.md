@@ -5,6 +5,7 @@
 ## Setup
 
 Use Go 1.26.2 or newer. Clone your fork as described in the contribution guide.
+Tree-sitter requires a C compiler and CGO enabled.
 No Node.js frontend, database, or Kubernetes cluster is required for the current CLI.
 
 ```sh
@@ -72,6 +73,9 @@ example future user rules, not additional enforced repository policies today.
 - Screen tests cover navigation, layout, markers, preview safety, highlighting,
   cursor tracking, scrollbars, themes, and bounded rendering.
 - Worker tests cover coalescing, outdated results, cancellation, and visible errors.
+- Analysis tests cover the five language grammars, strict configuration, regex
+  positions, JavaScript contracts/timeouts, script containment, and live reloads.
+- CLI tests cover structured reports and violation/error exit semantics.
 - The macOS terminal regression starts a pseudo-terminal through
   `/usr/bin/script`, opens a large context, checks theme output, and verifies quit.
   This platform-specific test does not run on other operating systems.

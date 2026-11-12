@@ -19,7 +19,7 @@ func TestChangedFilesAnimateWithDistinctColor(t *testing.T) {
 	}})
 	frames := make(map[string]bool)
 	for range 4 {
-		frame := render(m, 160, 24)
+		frame := render(m, 160, 40)
 		frames[frame] = true
 		for i, row := range m.rows {
 			el := m.tree.Children()[i]

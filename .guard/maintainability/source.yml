@@ -1,0 +1,9 @@
+version: 1
+include:
+  - "**/*.go"
+  - "**/*.js"
+rules:
+  - id: max-source-lines
+    type: javascript
+    message: Keep source and test files at or below 300 lines.
+    file: .guard/rules/max-source-lines.js

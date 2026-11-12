@@ -1,0 +1,10 @@
+version: 1
+timeout_ms: 100
+include:
+  - "**/*.txt"
+rules:
+  - id: source-lines
+    type: javascript
+    description: Demonstrates located findings using a 300-line limit.
+    file: .guard/scripts/source-lines.js
+    message: Split long notes into smaller documents.

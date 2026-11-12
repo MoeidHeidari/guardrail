@@ -23,7 +23,7 @@ func TestLargeContextTerminalInput(t *testing.T) {
 	for _, test := range []struct {
 		name, colorFGBG, background string
 	}{
-		{"dark", "15;0", "48;2;24;26;31"},
+		{"dark", "15;0", "48;2;8;20;33"},
 		{"light", "0;15", "48;2;250;251;253"},
 	} {
 		t.Run(test.name, func(t *testing.T) {

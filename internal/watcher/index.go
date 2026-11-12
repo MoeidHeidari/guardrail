@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/MoeidHeidari/guardrail/internal/ignore"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -23,6 +24,9 @@ func (w *Watcher) put(entry Entry) {
 }
 
 func (w *Watcher) reconcile(pending map[string]fsnotify.Op) (Update, error) {
+	if _, changed := pending[ignore.FileName]; changed {
+		return w.reloadIgnore(pending)
+	}
 	touched := make(map[string]Entry)
 	absent := make(map[string]bool)
 	remember := func(path string) {
@@ -74,6 +78,9 @@ func (w *Watcher) reconcile(pending map[string]fsnotify.Op) (Update, error) {
 		if err != nil {
 			return Update{}, fmt.Errorf("refresh %q: %w", path, err)
 		}
+		if w.ignore.Matches(path, info.IsDir()) {
+			continue
+		}
 		old, exists := w.index[path]
 		if exists && (old.IsDir() != info.IsDir() || pending[path].Has(fsnotify.Rename|fsnotify.Remove)) {
 			if err := remove(path); err != nil {
@@ -99,6 +106,12 @@ func (w *Watcher) reconcile(pending map[string]fsnotify.Op) (Update, error) {
 				relative, err := filepath.Rel(w.Root, full)
 				if err != nil {
 					return err
+				}
+				if w.ignore.Matches(relative, meta.IsDir()) {
+					if meta.IsDir() {
+						return filepath.SkipDir
+					}
+					return nil
 				}
 				if meta.IsDir() {
 					if err := w.backend.Add(full); err != nil {
