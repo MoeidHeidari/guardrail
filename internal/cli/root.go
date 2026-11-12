@@ -12,6 +12,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "guardrail",
 		Short:         "Engineering standards workspace",
+		Version:       Version + " (" + Commit + ")",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		CompletionOptions: cobra.CompletionOptions{
