@@ -49,7 +49,7 @@ func (w *Watcher) reconcile(pending map[string]fsnotify.Op) (Update, error) {
 		}
 		if old, exists := w.index[path]; exists && old.IsDir() {
 			err := w.backend.Remove(filepath.Join(w.Root, path))
-			if err != nil && !errors.Is(err, fsnotify.ErrNonExistentWatch) {
+			if err != nil && !removedWatch(err) {
 				return fmt.Errorf("unwatch %q: %w", path, err)
 			}
 		}

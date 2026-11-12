@@ -206,7 +206,7 @@ func (w *Watcher) scan() ([]Entry, error) {
 	}
 	for path := range watched {
 		if !directories[path] {
-			if err := w.backend.Remove(path); err != nil && !errors.Is(err, fsnotify.ErrNonExistentWatch) {
+			if err := w.backend.Remove(path); err != nil && !removedWatch(err) {
 				return nil, fmt.Errorf("unwatch directory %q: %w", path, err)
 			}
 		}
