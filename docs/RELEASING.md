@@ -2,7 +2,7 @@
 
 Pull requests to `main` run formatting, the 300-line Go file convention,
 golangci-lint v2.6.2, vet, race tests with coverage, semantic-versioning tests,
-and native build/smoke checks. Go is selected from `go.mod`. The pinned linter is
+without building release binaries. Go is selected from `go.mod`. The pinned linter is
 built with that Go toolchain so its binary can analyze the project's Go version.
 
 ## Merge convention
