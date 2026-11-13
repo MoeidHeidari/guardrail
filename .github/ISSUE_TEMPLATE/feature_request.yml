@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a capability, rule workflow, or integration.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues and read the [roadmap](https://github.com/MoeidHeidari/guardrail/blob/main/docs/ARCHITECTURE.md#roadmap) first.
+        Use the language support form for a new parser or language-specific support.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and audience
+      description: What is difficult today, who is affected, and why is existing behavior insufficient?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed workflow
+      description: Describe the desired behavior and a concrete example. For integrations, name the tool and how feedback should reach it.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List observable outcomes that would make this feature complete, including failure behavior.
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and tradeoffs
+      description: Include workarounds, compatibility concerns, performance costs, and trust or offline requirements where relevant.
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and related work
+      description: Link related issues and distinguish the first useful version from follow-up work. For rules, include passing/failing examples and expected finding locations.

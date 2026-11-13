@@ -1,0 +1,48 @@
+name: Language support
+description: Request a new language, grammar, file extension, or language-specific rule capability.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tree-sitter parsing currently supports Go, JavaScript/JSX, TypeScript/TSX, Python, and Rust.
+        Syntax highlighting, parser support, default analysis scope, and semantic rules are separate capabilities.
+        Other included text files can already use regex and JavaScript rules.
+  - type: input
+    id: language
+    attributes:
+      label: Language and file patterns
+      placeholder: "Java; **/*.java"
+    validations:
+      required: true
+  - type: dropdown
+    id: capabilities
+    attributes:
+      label: Requested capabilities
+      multiple: true
+      options:
+        - Syntax highlighting
+        - Tree-sitter parsing and syntax diagnostics
+        - Default analysis file patterns
+        - Language-specific rules or AST helpers
+        - Other (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Use case and expected behavior
+      description: Describe the project workflow, language versions/dialects, and expected diagnostics or rule behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Minimal examples and acceptance criteria
+      description: Provide synthetic valid/invalid snippets, expected file/line/column output, and outcomes needed for completion.
+    validations:
+      required: true
+  - type: textarea
+    id: grammar
+    attributes:
+      label: Grammar or tooling references
+      description: If known, link the upstream Tree-sitter grammar, license, supported dialects, and relevant tooling. A grammar is not required for highlighting-only requests.

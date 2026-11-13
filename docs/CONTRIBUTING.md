@@ -58,7 +58,9 @@ See [AGENTS.md](../AGENTS.md) and the [development guide](DEVELOPMENT.md) for de
 
 ## Pull requests
 
-Prefer one feature or fix per PR. A useful description includes:
+Prefer one feature or fix per PR. Fill in the
+[pull request template](../.github/pull_request_template.md), including exact
+validation commands and results. A useful description includes:
 
 - The problem and intended outcome.
 - A linked issue, where applicable.
@@ -91,8 +93,8 @@ docs: reorganize user and contributor guides
 
 Use the same style for commit messages where possible. Clearly explain breaking
 changes in the PR and use Conventional Commits breaking-change notation when
-applicable. These are contributor requirements; this repository does not
-currently have a PR-title lint workflow enforcing them.
+applicable. The Quality workflow validates Conventional PR titles for pull
+requests targeting `main`.
 
 ## Review checklist
 
@@ -109,17 +111,20 @@ Maintainers may request revisions or a narrower scope before merging.
 
 ## Issues and questions
 
-Use the [issue tracker](https://github.com/MoeidHeidari/guardrail/issues) for bugs,
-questions, and feature proposals. Include reproduction steps, expected and actual
+Use the [issue tracker](https://github.com/MoeidHeidari/guardrail/issues) for bugs
+and feature proposals. Choose the bug report, feature request, or language support
+form; for usage questions, start with the support guide.
+Include reproduction steps, expected and actual
 behavior, OS, terminal application, Go version, and relevant context size.
 See [Support](SUPPORT.md) for a reporting checklist.
 
 ## Releases and changelog
 
-The repository does not currently include an automated release/changelog workflow.
-Conventional titles and commits prepare for future tooling, but do not assume
-Crossview's release pipeline is installed here. Describe noteworthy behavior
-changes in the PR and relevant docs; do not invent release entries or versions.
+The manually dispatched release workflow runs quality checks, plans a semantic
+version from Conventional Commits, and publishes native binaries and release
+notes. See [Releasing](RELEASING.md) for the exact process. Describe noteworthy
+behavior changes in the PR and relevant docs; do not invent release entries or
+versions.
 
 ## Contribution license
 

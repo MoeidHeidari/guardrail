@@ -1,0 +1,52 @@
+name: Bug report
+description: Report a reproducible problem with Guardrail.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. Use a small synthetic example and redact private paths, source, and credentials.
+        For vulnerabilities, follow the [security policy](https://github.com/MoeidHeidari/guardrail/blob/main/docs/SECURITY.md) instead of opening a public issue.
+  - type: input
+    id: version
+    attributes:
+      label: Guardrail version or commit
+      description: Include how you installed or built Guardrail.
+      placeholder: Release version or git rev-parse HEAD; built from source
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS/version, terminal/version, shell, and Go version if built from source. For UI bugs include terminal dimensions and light/dark theme.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include the exact command, minimal file layout, relevant rules/ignore patterns, and steps to trigger the problem.
+      placeholder: |
+        1. Create a disposable context containing ...
+        2. Run guardrail watch ...
+        3. Save, rename, click, or press ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include redacted error output or a panic stack trace. For UI problems, attach a redacted screenshot or recording if possible.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Approximate file/directory counts, edit/save pattern, update delays, frequency, workarounds, and whether it reproduces on current main.
