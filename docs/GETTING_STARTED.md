@@ -74,8 +74,8 @@ A symlink supplied as the root is resolved to its target.
 5. Select a file and press `Enter` to open Content.
 6. Edit and save that file in your editor. Guardrail shows its activity and
    refreshes the preview.
-7. Press `1` to focus sidebar activity without replacing Content, `0` to return
-   to the workspace page, or `q` to quit.
+7. Press `w` to focus sidebar activity without replacing Content, `0` to return
+   to the workspace page, `Esc` to go back to the sidebar, or `q` to quit.
 
 Guardrail previews files but does not edit them. You do not need an AI coding agent
 to use watching, and filesystem activity does not identify who authored an edit.

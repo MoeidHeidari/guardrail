@@ -97,7 +97,7 @@ func (m *Main) renderRules() {
 		row.Apply(tui.WithWidth(tui.StringWidth(text)), tui.WithFlexShrink(0))
 		if i == m.rulesFileSelection {
 			row.Apply(tui.WithBackground(tui.Style{Bg: theme.Selection}),
-				tui.WithTextStyle(tui.Style{Fg: theme.Accent, Bg: theme.Selection}))
+				tui.WithTextStyle(tui.Style{Fg: theme.SelectionText, Bg: theme.Selection}))
 		}
 		m.rulesFiles.AddChild(row)
 	}
@@ -114,6 +114,8 @@ func (m *Main) renderRules() {
 	header.AddChild(m.ruleTableRow([]string{"Rule set / Rule", "Type", "Rules", "Files", "Violations", "Errors"}, false, true))
 	left := m.overviewCard(fmt.Sprintf("%d rule sets / %d rules", len(sets), len(m.analysisResult.Rules)), 0, header, m.rulesList)
 	right := m.overviewCard("Affected files / Findings", 0, m.rulesFiles)
+	m.highlightFocus(left.Children()[0], m.changesFocus && m.rulesFocus == 0)
+	m.highlightFocus(right.Children()[0], m.changesFocus && m.rulesFocus == 1)
 	for _, card := range []*tui.Element{left, right} {
 		card.Apply(tui.WithHeightPercent(100), tui.WithWidth(0), tui.WithFlexGrow(1), tui.WithMinWidth(0))
 	}

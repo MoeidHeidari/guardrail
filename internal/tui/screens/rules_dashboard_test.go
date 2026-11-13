@@ -35,10 +35,10 @@ func TestRulesTableColumnsAndHorizontalScrolling(t *testing.T) {
 	if x != m.rulesListX {
 		t.Fatal("table header and rows must remain aligned")
 	}
-	press(t, m, tui.KeyLeft)
+	pressRune(t, m, ' ')
 	render(m, 160, 40)
 	if len(m.rulesItems) != 1 {
-		t.Fatal("Left must still collapse the selected set")
+		t.Fatal("Space must collapse the selected set")
 	}
 }
 

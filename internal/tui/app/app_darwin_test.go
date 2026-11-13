@@ -21,10 +21,10 @@ func TestLargeContextTerminalInput(t *testing.T) {
 		}
 	}
 	for _, test := range []struct {
-		name, colorFGBG, background string
+		name, colorFGBG string
 	}{
-		{"dark", "15;0", "48;2;8;20;33"},
-		{"light", "0;15", "48;2;250;251;253"},
+		{"dark", "15;0"},
+		{"light", "0;15"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -48,8 +48,10 @@ func TestLargeContextTerminalInput(t *testing.T) {
 			if err != nil || writeErr != nil || !strings.Contains(string(output), "PASS") {
 				t.Fatalf("large context must accept keyboard quit without panic: run=%v input=%v\n%s", err, writeErr, output)
 			}
-			if !strings.Contains(string(output), test.background) {
-				t.Fatalf("startup must render detected %s background:\n%s", test.name, output)
+			if !strings.Contains(string(output), "GUARDRAIL") ||
+				strings.Contains(string(output), "48;2;8;20;33") ||
+				strings.Contains(string(output), "48;2;250;251;253") {
+				t.Fatalf("startup must render without forcing the old %s background:\n%s", test.name, output)
 			}
 		})
 	}

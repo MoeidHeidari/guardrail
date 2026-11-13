@@ -10,25 +10,30 @@ The sidebar uses thin horizontal divider lines between workspace navigation,
 the independently scrollable Context tree, and live Watch activity below it.
 Sections share the same background, without tinted cards or boxed borders.
 Workspace navigation, Context rows, and Watch use compact single-line items with
-horizontal text insets. Selection uses a restrained tinted background and a thin
-blue left accent, without tall boxes or extra blank rows. The accent column is
-reserved for every row so changing selection does not shift the text.
+horizontal text insets. Selection uses a restrained tinted background and readable
+text, without vertical markers, boxes, or extra blank rows.
 Use `[` / `]` when Context or Watch is focused, or Shift+mouse wheel over either
 section, to scroll long names and paths horizontally.
-Right/`l` also scrolls long file names in Context; Left/`h` scrolls back before
-returning to parent-folder navigation. Folder expansion remains unchanged.
+Left/Right navigate without changing horizontal scroll offsets. Use `[` / `]`
+for horizontal scrolling, including in file and search previews.
 Navigation contains Overview, Violations,
-and Rules. Choose a page with a click, `o` / `v` / `u`, or focus navigation with
-`Tab` and use Up/Down then `Enter`. Page selection preserves tree state.
+and Rules. Choose a page with a click, or focus navigation with
+`Tab`, use Up/Down, then `Enter` or Right (which also moves focus into the page). Page selection preserves tree state.
 
 Overview is the default workspace page. Workspace navigation receives keyboard
 focus at startup, rather than Context. Metrics at the top show violations,
 execution errors, affected files, and rules, with workspace status and findings below.
+Overview and Violations share metric cards with bold counts, colored bars with
+muted empty tracks, and labeled ratios. Violations and errors show their share of
+all findings; affected files are compared with checked files. The Rules count is
+the configured total, with its bar showing how many rules have findings.
+Cards distinguish unavailable analysis (`--`) from zero and mark pending results
+as updating. Bars describe result proportions, not analysis completion progress.
 The content preview stays hidden until you select a finding with a click,
 Up/Down in the focused list, or Enter. It appears beside the findings on wide
 terminals and below them on narrower terminals.
 Rule sets appear as highlighted `[set-name]` tags beside affected-file locations.
-The findings panel scrolls horizontally with Left/Right (or `h`/`l`) when focused,
+The findings panel scrolls horizontally with `[` / `]` when focused,
 so long paths, tags, and rule names remain accessible.
 Filter Overview's affected findings with All / Violations / Errors or `a` / `b` / `e`,
 just like the violation table. Selection and live preview follow matching results;
@@ -44,7 +49,7 @@ The Rules workspace uses a grouped table on the left: rule sets are parents
 and their rules are indented children, with columns for type, rule count, affected
 files, violations, and errors. Only the selected row has an accent
 border, with no background highlight. Set names use the accent color; nonzero
-violation and error counts use the warning and error colors. Left/Right collapses/expands sets.
+violation and error counts use the warning and error colors. Space collapses/expands a set; Right moves to the next pane, Left to the previous one and finally back to the sidebar.
 The table heading shows the total number of rule sets and rules, even when sets
 are collapsed. Use `[` / `]` to scroll its columns or the file list horizontally.
 Matching file findings appear on the right. The full-width content
@@ -60,7 +65,7 @@ is labeled outdated rather than implying the previous counts are current. Missin
 No policy is built in. See [Rules and checking](RULES.md).
 The violation table has fixed column headings for kind, file/location, rule set,
 rule, and message.
-Focus the table and use Left/Right (`h`/`l`) to scroll full-width columns; headings
+Focus the table and use `[` / `]` to scroll full-width columns; headings
 stay aligned with the rows. Filter with the clickable All / Violations / Errors
 buttons or `a` / `b` / `e`. Up/Down and Enter operate only on matching findings.
 Summary metrics continue to describe the entire report, not just the filter. A subtle highlighted row marks selection; the detail panel
@@ -80,23 +85,33 @@ as a main tab until closed. Watching continues throughout.
 
 ### Watch
 
-Watch is excluded from Tab and workspace-menu navigation; it remains visible
-as a passive activity section. Mouse scrolling and the explicit `1` shortcut
-remain available.
+Watch participates in the Tab cycle: Workspace menu, Context, main pane, Watch.
+Down from the last Context row enters Watch; Up from its first row returns to
+Context. Mouse interaction and the explicit `w` shortcut remain available.
 Watch below Context shows the latest 200 changes, newest first, with timestamps
 and context-relative paths. `A` indicates creation, `M` modification,
-and `D` deletion, in green, yellow, and red respectively. Click or press `1` to
-focus activity without replacing the main workspace page or Content. It supports
-arrow/Page/Home/End keys, mouse wheel scrolling and scrollbar dragging.
+and `D` deletion, in green, yellow, and red respectively. Click or press `w` to
+focus activity without replacing the main workspace page or Content.
+Up/Down selects changed files; Enter or Right opens the selection in a content
+tab. Click a change to open it. Up from the first change returns focus to Context.
+Deleted files show an unavailable-file message. Page/Home/End keys, mouse wheel
+scrolling and scrollbar dragging remain available; use `[` / `]` for horizontal scrolling.
+
+The focused pane's heading uses a subtle background tint and bold contrasting text.
+Inactive headings retain their quieter colors; focus adds no borders.
 
 At the top, new events follow automatically. When you scroll back, your position
 is retained until the relevant events leave the bounded history.
 
 ### Content
 
-Open a file with a click or `Enter` to reveal the read-only Content tab.
-Afterward, press `2` to return to it until it is closed. While Content is active, changing the tree selection previews
-the newly selected file.
+Open a file with a click or `Enter` to add a Content tab named after it. Each
+opened file (or finding location) gets its own tab; opening an already open file
+reuses its tab. Click a tab, press `1`-`9` to jump to that tab (`0` is the workspace tab), `<` / `>` to
+cycle, and `x` or a tab's `[x]` to close it. When tabs do not fit, the bar scrolls to
+keep the active tab visible and shows `‹N` / `N›` for hidden tabs (click to step). Each tab keeps its own scroll position, and
+tree selection no longer replaces the active file. Duplicate file names show their
+paths. Closing the last tab returns to the workspace page.
 
 The breadcrumb shows the file, detected language, and size. Chroma selects syntax
 highlighting from the filename, including Go, JavaScript/TypeScript, Python,
@@ -178,14 +193,32 @@ treated as one region. You can scroll manually until the next text change.
 
 ## Keyboard and mouse
 
+The header's **Search files [/]** searches filenames and context-relative
+paths (case-insensitive). Press `/` or click it, then type to filter watched
+files. Up/Down selects results; Enter, Right, or a result click previews the file
+in the right-hand pane without creating a tab, focuses the preview, and reveals
+the file in Context. Up/Down scrolls the focused preview; Left or Esc returns to
+the results. Esc from results cancels without changing the current page or file.
+Search updates as files
+are added or removed and respects the watched context's ignore rules.
+
+The footer shows shortcuts for the focused pane, including filters, Rules folding,
+and content tab navigation. It prioritizes the relevant actions and fits the
+available terminal width; wider terminals also show sidebar jump shortcuts.
+
 | Input | Action |
 | --- | --- |
-| `0` / `1` / `2` | Open workspace page / focus sidebar activity / Content (after first file open) |
-| `o` / `v` / `u` | Open Overview / Violations / Rules |
-| `Tab` | Cycle focus: context tree, main panel, workspace navigation |
+| `/` | Focus global file search in the header |
+| `0` / `1`-`9` | Workspace tab / content tab N |
+| `<` / `>` | Previous / next tab (wraps through the workspace tab) |
+| `o` / `v` / `u` | Open Overview / Violations / Rules and focus it |
+| `c` / `w` | Focus Context / Watch |
+| `Tab` | Cycle focus: workspace navigation, Context, main panel, Watch |
+| `Esc` | Return focus from the page or Watch to the sidebar item that opened it |
 | Up/Down or `k`/`j` | Move tree/finding selection or scroll Watch/Content/Rules |
-| Right or `l` | Expand a folder/select its first child; in Content, scroll right |
-| Left or `h` | Collapse a folder/select its parent; in Content, scroll left |
+| Right or `l` | Folder: expand/select first child. Workspace item or file: open it and focus the page. In Overview/Violations: next filter. In Rules: next pane |
+| Left or `h` | Collapse a folder/select its parent. In Overview/Violations: previous filter, or back to the sidebar from "All". In other panes: return to the previous pane or sidebar |
+| Down / Up at an edge | Down from the last Workspace item enters Context; Up from the first Context row enters the Workspace menu |
 | `[` / `]` | Scroll the focused Context, Watch, table, findings, or preview pane horizontally |
 | `x` | Close the active content preview |
 | `Enter` / `Space` | Toggle the selected folder, open a file, or open a focused finding |
@@ -204,13 +237,18 @@ Click a finding, or focus the main panel and press `Enter`, to open its location
 
 ## Appearance
 
-The theme is detected once at startup. Both UI colors and syntax highlighting
-match the detected light/dark background. Unsupported background queries fall
+The workspace inherits the terminal's default background and foreground, and uses
+its configurable ANSI palette for accents, errors, warnings, and activity.
+Light/dark detection at startup selects syntax highlighting and subtle selection
+tints, which remain application-defined. Highlighted text uses a matching explicit
+foreground so terminal accent colors cannot disappear against the selection tint.
+Unsupported background queries fall
 back to `COLORFGBG`, then dark mode. Restart after changing terminal themes;
 Guardrail does not poll for theme changes.
 
-The workspace uses a dark navy palette (or a matching light palette), thin blue-toned
-panel outlines, and a padded navbar with the brand, workspace name, and watching
+Exact accent colors and their contrast depend on your terminal palette; Guardrail
+does not read or replace the entire terminal theme.
+The workspace uses subtle panel outlines and a padded navbar with the brand, workspace name, and watching
 status aligned on a single text row.
 It has a context sidebar up to 38 columns wide,
 a main panel filling remaining width, and a three-row status/help footer.

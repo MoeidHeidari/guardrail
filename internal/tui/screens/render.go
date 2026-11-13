@@ -53,7 +53,7 @@ var dotFrames = [...]string{".   ", "..  ", "... ", " .. "}
 const treeRowHeight = 1
 
 func (m *Main) Render(app *tui.App) *tui.Element {
-	if m.animationOnly && m.cachedRoot != nil {
+	if m.animationOnly && m.cachedRoot != nil && !m.searchOpen {
 		m.animationOnly = false
 		return m.cachedRoot
 	}
@@ -75,6 +75,15 @@ func (m *Main) Render(app *tui.App) *tui.Element {
 		}
 	}
 	header := components.NewHeader(m.theme, "GUARDRAIL", display(filepath.Base(m.root))+"  /  workspace")
+	m.searchButton = m.label("Search files [/]")
+	m.searchButton.Apply(tui.WithMinWidth(0), tui.WithFlexShrink(1),
+		tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Muted)))
+	if m.searchOpen {
+		m.searchButton.SetText("Search: " + display(string(m.searchQuery)) + "_")
+		m.searchButton.Apply(tui.WithWidthPercent(50))
+		m.highlightFocus(m.searchButton, true)
+	}
+	header.AddChild(m.searchButton)
 	m.tree = components.NewContainer(m.theme, tui.WithFlexGrow(1),
 		tui.WithHeight(0), tui.WithScrollable(tui.ScrollBoth),
 		tui.WithScrollOffset(m.treeX, m.treeOffset))
@@ -128,18 +137,14 @@ func (m *Main) Render(app *tui.App) *tui.Element {
 				if changing {
 					foreground = m.theme.Activity
 				}
+				if background.Equal(m.theme.Selection) || background.Equal(m.theme.ActiveSelection) {
+					foreground = m.theme.SelectionText
+				}
 			}
 			el.Apply(tui.WithTextStyle(tui.Style{Fg: foreground, Bg: background}),
 				tui.WithBackground(tui.Style{Bg: background}))
 		}
-		background := m.theme.Selection
-		if changing {
-			background = m.theme.ActiveSelection
-		}
-		if m.changesFocus || m.navigationFocus || m.watchFocus {
-			background = m.theme.Chrome
-		}
-		m.styleSidebarRow(el, i == m.selected, background)
+		m.styleSidebarRow(el)
 		el.Apply(tui.WithWidth(tui.StringWidth(el.Text())+3), tui.WithFlexShrink(0))
 		m.tree.AddChild(el)
 		if changing && active {
@@ -153,6 +158,9 @@ func (m *Main) Render(app *tui.App) *tui.Element {
 	}
 	sidebar := m.renderSidebar()
 	content := m.renderPanel()
+	if m.searchOpen {
+		content = m.renderSearch()
+	}
 	if dragTree {
 		m.dragPane = m.tree
 	} else if dragFeed {
@@ -181,21 +189,11 @@ func (m *Main) Render(app *tui.App) *tui.Element {
 	if m.watchFocus {
 		focus = "Watch"
 	}
-	status := m.label(fmt.Sprintf("Watching   %d files & folders   %d changed   /   %s", len(m.entries), m.changedFiles, focus))
+	status := m.label(fmt.Sprintf("Watching   %d entries   %d changed   /   %s", len(m.entries), m.changedFiles, focus))
 	status.Apply(tui.WithMinWidth(0), tui.WithFlexShrink(1))
 	status.Apply(tui.WithBackground(tui.Style{Bg: m.theme.Chrome}),
 		tui.WithTextStyle(tui.Style{Fg: m.theme.Muted}))
-	hint := "0 workspace   1 activity   2 content   Tab focus   q quit"
-	if app != nil {
-		width, _ := app.Size()
-		if width < 90 {
-			hint = "Tab focus   q quit"
-		}
-		if width < 55 {
-			hint = "q quit"
-		}
-	}
-	help := m.label(hint)
+	help := m.label(m.footerHint(m.renderWidth))
 	help.Apply(tui.WithTextStyle(tui.Style{Fg: m.theme.Muted}))
 	help.Apply(tui.WithFlexShrink(0))
 	footer := components.NewContainer(m.theme, tui.WithHeight(3), tui.WithFlexShrink(0),

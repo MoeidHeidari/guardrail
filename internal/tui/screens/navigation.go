@@ -8,10 +8,14 @@ import (
 
 func (m *Main) move(delta int) {
 	if m.watchFocus {
-		m.changeOffset = max(0, min(m.changeOffset+delta, max(0, len(m.changes)-viewport(m.watchPane))))
+		m.moveWatch(delta)
 		return
 	}
 	if m.navigationFocus {
+		if delta == 1 && m.navigationIndex == len(workspaceLabels)-1 && len(m.rows) > 0 {
+			m.navigationFocus = false
+			return
+		}
 		m.navigationIndex = max(0, min(m.navigationIndex+delta, len(workspaceLabels)-1))
 		return
 	}
@@ -37,37 +41,30 @@ func (m *Main) move(delta int) {
 		m.changeOffset = max(0, min(m.changeOffset+delta, len(m.changes)-viewport(m.feed)))
 		return
 	}
+	if m.moveContextBoundary(delta) {
+		return
+	}
 	m.selected = max(0, min(m.selected+delta, len(m.rows)-1))
 	m.reveal()
 }
 
-func (m *Main) reveal() {
-	top := m.selected * treeRowHeight
-	if top < m.treeOffset {
-		m.treeOffset = top
-	} else if top+treeRowHeight > m.treeOffset+viewport(m.tree) {
-		m.treeOffset = max(top, top+treeRowHeight-viewport(m.tree))
-	}
-	m.treeOffset = min(m.treeOffset, max(0, len(m.rows)*treeRowHeight-viewport(m.tree)))
-}
-
 func (m *Main) expand() {
-	if m.scrollFindingX(4) {
-		return
-	}
-	if m.scrollOverviewX(4) {
-		return
-	}
 	if m.watchFocus {
-		m.scrollSidebarX(4)
+		m.openWatchFile()
+		return
+	}
+	if m.stepFilter(1) {
+		return
+	}
+	if m.rulesVisible() && m.changesFocus && m.rulesFocus < 2 {
+		m.activateRulesPane()
+		return
+	}
+	if m.changesFocus && m.findingsVisible() {
 		return
 	}
 	if m.navigationFocus {
-		m.toggle()
-		return
-	}
-	if m.changesFocus && m.contentTab {
-		m.scrollContentX(4)
+		m.activate()
 		return
 	}
 	if m.changesFocus || len(m.rows) == 0 {
@@ -78,34 +75,39 @@ func (m *Main) expand() {
 		m.toggle()
 	} else if entry.IsDir() && m.selected+1 < len(m.rows) && m.rows[m.selected+1].depth > m.rows[m.selected].depth {
 		m.move(1)
-	} else {
-		m.scrollSidebarX(4)
+	} else if !entry.IsDir() {
+		m.activate()
 	}
 }
 
 func (m *Main) collapse() {
-	if m.scrollFindingX(-4) {
+	if m.stepFilter(-1) {
 		return
 	}
-	if m.scrollOverviewX(-4) {
+	if m.changesFocus && (m.findingsVisible() || (m.overviewVisible() && !m.overviewPreviewFocus)) {
+		m.focusSidebar()
+		return
+	}
+	if m.overviewVisible() && m.changesFocus && m.overviewPreviewFocus {
+		m.overviewPreviewFocus = false
+		return
+	}
+	if m.rulesVisible() && m.changesFocus && m.rulesFocus > 0 {
+		m.rulesFocus--
 		return
 	}
 	if m.watchFocus {
-		m.scrollSidebarX(-4)
+		m.focusContext()
 		return
 	}
 	if m.navigationFocus {
 		return
 	}
-	if m.changesFocus && m.contentTab {
-		m.scrollContentX(-4)
+	if m.changesFocus {
+		m.focusSidebar()
 		return
 	}
-	if m.changesFocus || len(m.rows) == 0 {
-		return
-	}
-	if m.treeX > 0 {
-		m.scrollSidebarX(-4)
+	if len(m.rows) == 0 {
 		return
 	}
 	entry := m.rows[m.selected].entry
@@ -124,34 +126,33 @@ func (m *Main) collapse() {
 }
 
 func (m *Main) KeyMap() tui.KeyMap {
-	quit := func(event tui.KeyEvent) { event.App().Stop() }
-	page := func() int {
-		if m.watchFocus {
-			return viewport(m.watchPane)
-		}
-		if m.changesFocus {
-			if m.findingsVisible() {
-				return max(1, viewport(m.feed)/findingHeight)
-			}
-			return viewport(m.feed)
-		}
-		return max(1, viewport(m.tree)/treeRowHeight)
+	if m.searchOpen {
+		return m.searchKeyMap()
 	}
+	quit := func(event tui.KeyEvent) { event.App().Stop() }
 	return tui.KeyMap{
 		tui.On(tui.Rune('q'), quit),
 		tui.On(tui.KeyCtrlC, quit),
+		tui.On(tui.Rune('/'), func(tui.KeyEvent) { m.openSearch() }),
 		tui.On(tui.KeyTab, func(tui.KeyEvent) { m.cycleFocus() }),
-		tui.On(tui.Rune('0'), func(tui.KeyEvent) { m.openWorkspace(m.workspacePage) }),
-		tui.On(tui.Rune('1'), func(tui.KeyEvent) { m.openNavigation(len(workspaceLabels)) }),
-		tui.On(tui.Rune('2'), func(tui.KeyEvent) {
-			if m.contentOpened {
-				m.watchFocus = false
-				m.dashboardTab, m.contentTab = false, true
-			}
-		}),
-		tui.On(tui.Rune('o'), func(tui.KeyEvent) { m.openWorkspace(overviewPage) }),
-		tui.On(tui.Rune('v'), func(tui.KeyEvent) { m.openWorkspace(violationsPage) }),
-		tui.On(tui.Rune('u'), func(tui.KeyEvent) { m.openWorkspace(rulesPage) }),
+		tui.On(tui.KeyEscape, func(tui.KeyEvent) { m.focusSidebar() }),
+		tui.On(tui.Rune('o'), func(tui.KeyEvent) { m.openWorkspaceFocused(overviewPage) }),
+		tui.On(tui.Rune('v'), func(tui.KeyEvent) { m.openWorkspaceFocused(violationsPage) }),
+		tui.On(tui.Rune('u'), func(tui.KeyEvent) { m.openWorkspaceFocused(rulesPage) }),
+		tui.On(tui.Rune('c'), func(tui.KeyEvent) { m.focusContext() }),
+		tui.On(tui.Rune('w'), func(tui.KeyEvent) { m.openNavigation(len(workspaceLabels)) }),
+		tui.On(tui.Rune('<'), func(tui.KeyEvent) { m.cycleTab(-1) }),
+		tui.On(tui.Rune('>'), func(tui.KeyEvent) { m.cycleTab(1) }),
+		tui.On(tui.Rune('0'), func(tui.KeyEvent) { m.jumpTab(0) }),
+		tui.On(tui.Rune('1'), func(tui.KeyEvent) { m.jumpTab(1) }),
+		tui.On(tui.Rune('2'), func(tui.KeyEvent) { m.jumpTab(2) }),
+		tui.On(tui.Rune('3'), func(tui.KeyEvent) { m.jumpTab(3) }),
+		tui.On(tui.Rune('4'), func(tui.KeyEvent) { m.jumpTab(4) }),
+		tui.On(tui.Rune('5'), func(tui.KeyEvent) { m.jumpTab(5) }),
+		tui.On(tui.Rune('6'), func(tui.KeyEvent) { m.jumpTab(6) }),
+		tui.On(tui.Rune('7'), func(tui.KeyEvent) { m.jumpTab(7) }),
+		tui.On(tui.Rune('8'), func(tui.KeyEvent) { m.jumpTab(8) }),
+		tui.On(tui.Rune('9'), func(tui.KeyEvent) { m.jumpTab(9) }),
 		tui.On(tui.Rune('r'), func(tui.KeyEvent) { m.previewDirty = true }),
 		tui.On(tui.Rune('x'), func(tui.KeyEvent) { m.closeActivePreview() }),
 		tui.On(tui.Rune('['), func(tui.KeyEvent) { m.scrollFocusedX(-4) }),
@@ -175,20 +176,23 @@ func (m *Main) KeyMap() tui.KeyMap {
 		tui.On(tui.Rune('k'), func(tui.KeyEvent) { m.move(-1) }),
 		tui.On(tui.KeyDown, func(tui.KeyEvent) { m.move(1) }),
 		tui.On(tui.Rune('j'), func(tui.KeyEvent) { m.move(1) }),
-		tui.On(tui.KeyEnter, func(tui.KeyEvent) { m.toggle() }),
-		tui.On(tui.Rune(' '), func(tui.KeyEvent) { m.toggle() }),
+		tui.On(tui.KeyEnter, func(tui.KeyEvent) { m.activate() }),
+		tui.On(tui.Rune(' '), func(tui.KeyEvent) { m.activateSpace() }),
 		tui.On(tui.KeyRight, func(tui.KeyEvent) { m.expand() }),
 		tui.On(tui.Rune('l'), func(tui.KeyEvent) { m.expand() }),
 		tui.On(tui.KeyLeft, func(tui.KeyEvent) { m.collapse() }),
 		tui.On(tui.Rune('h'), func(tui.KeyEvent) { m.collapse() }),
-		tui.On(tui.KeyPageUp, func(tui.KeyEvent) { m.move(-page()) }),
-		tui.On(tui.KeyPageDown, func(tui.KeyEvent) { m.move(page()) }),
+		tui.On(tui.KeyPageUp, func(tui.KeyEvent) { m.move(-m.pageSize()) }),
+		tui.On(tui.KeyPageDown, func(tui.KeyEvent) { m.move(m.pageSize()) }),
 		tui.On(tui.KeyHome, func(tui.KeyEvent) { m.move(-max(len(m.rows), len(m.changes), len(m.preview.lines), len(m.findings))) }),
 		tui.On(tui.KeyEnd, func(tui.KeyEvent) { m.move(max(len(m.rows), len(m.changes), len(m.preview.lines), len(m.findings))) }),
 	}
 }
 
 func (m *Main) HandleMouse(event tui.MouseEvent) bool {
+	if m.handleSearchMouse(event) {
+		return true
+	}
 	if m.handleScrollbar(event) {
 		return true
 	}
@@ -224,20 +228,11 @@ func (m *Main) HandleMouse(event tui.MouseEvent) bool {
 			m.openNavigation(len(workspaceLabels))
 			return true
 		}
-		if m.contentTabButton != nil && m.contentTabButton.Rect().Contains(event.X, event.Y) {
-			m.watchFocus = false
-			m.dashboardTab, m.contentTab = false, true
+		if m.handleContentTabClick(event) {
 			return true
 		}
 	}
-	if m.watchPane != nil && m.watchPane.Rect().Contains(event.X, event.Y) {
-		m.watchFocus, m.changesFocus, m.navigationFocus = true, false, false
-		switch event.Button {
-		case tui.MouseWheelUp:
-			m.move(-3)
-		case tui.MouseWheelDown:
-			m.move(3)
-		}
+	if m.handleWatchMouse(event) {
 		return true
 	}
 	inTree := m.tree != nil && m.tree.Rect().Contains(event.X, event.Y)

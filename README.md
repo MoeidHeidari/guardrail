@@ -81,8 +81,9 @@ The context tree opens one level deep. Child folders remain collapsed until open
 
 | Action | Control |
 | --- | --- |
-| Workspace page / focus sidebar activity / Content | `0` / `1` / `2` (Content appears after opening a file) |
-| Overview / Violations / Rules | Sidebar click or `o` / `v` / `u` |
+| Workspace tab / content tab N / next-previous tab | `0` / `1`-`9` / `>` `<` |
+| Overview / Violations / Rules / Context / Watch | `o` / `v` / `u` / `c` / `w` (shown in the sidebar) |
+| Open an item and focus it / go back | Right or `Enter` / Left or `Esc` |
 | Switch pane focus | `Tab` |
 | Navigate | Arrow keys or `h` / `j` / `k` / `l` |
 | Toggle a folder or preview a file | `Enter`, `Space`, or click |

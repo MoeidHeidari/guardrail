@@ -156,7 +156,8 @@ func (m *Main) openFinding() {
 	}
 	m.flattenRows()
 	m.selected = m.rowPositions[path]
-	m.contentTab, m.contentOpened, m.changesFocus, m.navigationFocus = true, true, true, false
+	m.openTab(path)
+	m.changesFocus, m.navigationFocus = true, false
 	m.previewDirty = true
 	m.jumpLine, m.jumpColumn = max(1, finding.Line), max(1, finding.Column)
 	m.reveal()

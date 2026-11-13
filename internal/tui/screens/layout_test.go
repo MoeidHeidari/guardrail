@@ -13,6 +13,7 @@ func TestEditorWorkspaceGeometry(t *testing.T) {
 	m := testScreen()
 	for _, size := range [][2]int{{240, 60}, {160, 48}, {120, 40}, {80, 24}, {60, 16}, {40, 12}, {20, 8}, {80, 24}} {
 		t.Run(fmt.Sprintf("%dx%d", size[0], size[1]), func(t *testing.T) {
+			m.renderWidth, m.renderHeight = size[0], size[1]
 			root := m.Render(nil)
 			buffer := tui.NewBuffer(size[0], size[1])
 			root.RenderTo(buffer, size[0], size[1])
@@ -45,7 +46,7 @@ func TestEditorWorkspaceGeometry(t *testing.T) {
 				if viewport(m.feed) < size[1]-13 || viewport(m.tree) < max(1, size[1]-25) {
 					t.Fatalf("too much vertical space consumed: tree=%d feed=%d", viewport(m.tree), viewport(m.feed))
 				}
-				for _, text := range []string{"GUARDRAIL", "1 Watch", "2 Content", "Watching", "Context", "Tab focus"} {
+				for _, text := range []string{"GUARDRAIL", "Watch  [w]", "Watching", "Context", "Tab focus"} {
 					if !strings.Contains(buffer.StringTrimmed(), text) {
 						t.Errorf("missing %q:\n%s", text, buffer.StringTrimmed())
 					}
@@ -64,7 +65,7 @@ func TestWorkspaceFocusAndTabStyling(t *testing.T) {
 	if !m.dashboardButton.TextStyle().Fg.Equal(m.theme.Accent) {
 		t.Fatal("active workspace tab must have an accent underline")
 	}
-	pressRune(t, m, '1')
+	pressRune(t, m, 'w')
 	frame = render(m, 120, 24)
 	if !strings.Contains(frame, "/   Watch") {
 		t.Fatal("status bar must follow pane focus")
@@ -73,10 +74,10 @@ func TestWorkspaceFocusAndTabStyling(t *testing.T) {
 	if !selected.Background().Bg.Equal(m.theme.Chrome) {
 		t.Fatal("tree selection must become subtle when the other pane has focus")
 	}
-	pressRune(t, m, '2')
+	m.openTab("README.md")
 	m.changesFocus = true
 	frame = render(m, 120, 24)
-	if !strings.Contains(frame, "/   Content") || !m.contentTabButton.TextStyle().Fg.Equal(m.theme.Accent) {
+	if !strings.Contains(frame, "/   Content") || !m.contentTabButton.Background().Bg.Equal(m.theme.Selection) {
 		t.Fatal("tab switch must update active tab and status bar")
 	}
 }

@@ -55,6 +55,7 @@ func (m *Main) StartPreviewWorker(parent context.Context) (<-chan PreviewResult,
 					root:       request.root, rows: []treeRow{{entry: request.entry}},
 					preview: request.previous, previewDirty: true,
 					contentX: request.x, contentOffset: request.y,
+					tabViews: map[string][2]int{request.entry.Path: {request.x, request.y}},
 				}
 				worker.loadPreview()
 				result := PreviewResult{id: request.id, preview: worker.preview}
@@ -76,12 +77,16 @@ func (m *Main) StartPreviewWorker(parent context.Context) (<-chan PreviewResult,
 func (m *Main) requestPreview() {
 	entry, exists := m.previewEntry()
 	if !exists {
+		m.loadPreview()
 		return
 	}
 	if entry.Path == m.requestedPath && !m.previewDirty {
 		return
 	}
 	m.previewID++
+	if entry.Path != m.preview.path {
+		m.contentX, m.contentOffset = m.tabView(entry.Path)
+	}
 	request := previewRequest{
 		theme: m.theme,
 		id:    m.previewID, root: m.root, entry: entry, previous: m.preview,
@@ -90,7 +95,6 @@ func (m *Main) requestPreview() {
 	m.requestedPath, m.previewDirty = entry.Path, false
 	if entry.Path != m.preview.path {
 		m.preview = filePreview{path: entry.Path, message: "Loading preview..."}
-		m.contentX, m.contentOffset = 0, 0
 	}
 	select {
 	case <-m.previewRequests:

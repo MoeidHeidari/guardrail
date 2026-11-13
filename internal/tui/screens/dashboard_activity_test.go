@@ -19,7 +19,7 @@ func TestSidebarActivityKeepsContentAndScrolls(t *testing.T) {
 		m.Apply(watcher.Update{Changes: []watcher.Change{{Path: fmt.Sprintf("file%02d", i), Kind: "modified"}}})
 	}
 	render(m, 120, 32)
-	pressRune(t, m, '1')
+	pressRune(t, m, 'w')
 	press(t, m, tui.KeyEnd)
 	render(m, 120, 32)
 	if !m.contentTab || !m.watchFocus || m.changeOffset != 60-viewport(m.watchPane) {

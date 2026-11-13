@@ -154,20 +154,20 @@ func TestSidebarHorizontalScroll(t *testing.T) {
 	if m.treeX != 0 {
 		t.Fatal("context horizontal offset must clamp at zero")
 	}
-	pressRune(t, m, '1')
+	pressRune(t, m, 'w')
 	render(m, 120, 32)
 	maximum, _ = m.watchPane.MaxScroll()
 	if maximum == 0 {
 		t.Fatal("long Watch paths must overflow horizontally")
 	}
 	for range 100 {
-		press(t, m, tui.KeyRight)
+		pressRune(t, m, ']')
 	}
 	frame := render(m, 120, 32)
 	if m.watchX != maximum || !strings.Contains(frame, "tail.go") {
 		t.Fatal("Watch scrolling must reveal the end of long paths")
 	}
-	press(t, m, tui.KeyLeft)
+	pressRune(t, m, '[')
 	if m.watchX >= maximum {
 		t.Fatal("Watch must scroll left")
 	}
@@ -205,13 +205,13 @@ func TestContextArrowHorizontalScroll(t *testing.T) {
 	m.selected = m.rowPositions[name]
 	render(m, 120, 32)
 	selected := m.selected
-	press(t, m, tui.KeyRight)
+	pressRune(t, m, ']')
 	render(m, 120, 32)
 	x, _ := m.tree.ScrollOffset()
 	if x != 4 || m.treeX != 4 || m.selected != selected {
-		t.Fatal("Right on a file must horizontally scroll Context without moving selection")
+		t.Fatal("] on a file must horizontally scroll Context without moving selection")
 	}
-	press(t, m, tui.KeyLeft)
+	pressRune(t, m, '[')
 	if m.treeX != 0 || m.selected != selected {
 		t.Fatal("Left must scroll back before navigating to the parent")
 	}

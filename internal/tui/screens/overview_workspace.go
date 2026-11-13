@@ -15,6 +15,13 @@ func (m *Main) overviewVisible() bool {
 }
 
 func (m *Main) previewEntry() (watcher.Entry, bool) {
+	if m.contentTab && m.contentActive != "" {
+		i, exists := m.entryPositions[m.contentActive]
+		if !exists {
+			return watcher.Entry{}, false
+		}
+		return m.entries[i], true
+	}
 	if m.rulesVisible() && m.rulesPath != "" {
 		i, exists := m.entryPositions[m.rulesPath]
 		if !exists {
@@ -97,16 +104,16 @@ func (m *Main) renderOverviewWorkspace() {
 		row := m.label("")
 		background, foreground := theme.Background, theme.Foreground
 		if index == m.findingIndex {
-			background, foreground = theme.Selection, theme.Accent
+			background, foreground = theme.Selection, theme.SelectionText
 		}
 		row.Apply(tui.WithBackground(tui.Style{Bg: background}),
 			tui.WithRichText(
 				tui.TextSpan{Text: display(fmt.Sprintf("%s:%d  ", finding.Path, finding.Line)),
 					Style: tui.Style{Fg: foreground, Bg: background}},
 				tui.TextSpan{Text: "[" + display(set) + "]",
-					Style: tui.NewStyle().Foreground(theme.Accent).Background(theme.Selection).Bold()},
+					Style: tui.NewStyle().Foreground(theme.SelectionText).Background(theme.Selection).Bold()},
 				tui.TextSpan{Text: " " + display(finding.Rule),
-					Style: tui.Style{Fg: theme.Muted, Bg: background}},
+					Style: tui.Style{Fg: foreground, Bg: background}},
 			))
 		width := 0
 		for _, span := range row.RichText() {
@@ -124,6 +131,7 @@ func (m *Main) renderOverviewWorkspace() {
 		m.overviewList.AddChild(m.label(text))
 	}
 	list := m.overviewCard("Affected files / Findings", 0, m.renderFindingFilters(), m.overviewList)
+	m.highlightFocus(list.Children()[0], m.changesFocus && !m.overviewPreviewFocus)
 	list.Apply(tui.WithHeight(0), tui.WithFlexGrow(1), tui.WithMinHeight(0))
 	summaries.AddChild(list)
 	sets := make(map[string]int)
@@ -245,11 +253,10 @@ func (m *Main) moveOverview(delta int) bool {
 }
 
 func (m *Main) scrollOverviewX(delta int) bool {
-	if m.rulesVisible() && m.changesFocus && m.rulesFocus == 0 {
-		m.expandRuleTree(delta > 0)
-		return true
-	}
 	if m.rulesVisible() && m.changesFocus && m.rulesFocus == 2 {
+		if delta < 0 && m.contentX == 0 {
+			return false
+		}
 		feed := m.feed
 		m.feed = m.rulesPreview
 		m.scrollContentX(delta)
@@ -257,6 +264,9 @@ func (m *Main) scrollOverviewX(delta int) bool {
 		return true
 	}
 	if !m.overviewVisible() || !m.changesFocus {
+		return false
+	}
+	if delta < 0 && ((m.overviewPreviewFocus && m.contentX == 0) || (!m.overviewPreviewFocus && m.overviewListX == 0)) {
 		return false
 	}
 	if m.overviewPreviewFocus {

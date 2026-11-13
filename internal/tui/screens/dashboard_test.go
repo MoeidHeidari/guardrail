@@ -27,7 +27,7 @@ func TestDashboardDefaultAndNavigation(t *testing.T) {
 	if m.changeOffset != 0 || m.contentOffset != 0 {
 		t.Fatal("Dashboard navigation must not scroll inactive tabs")
 	}
-	pressRune(t, m, '1')
+	pressRune(t, m, 'w')
 	frame = render(m, 120, 32)
 	if !m.dashboardVisible() || !m.watchFocus || !strings.Contains(frame, "Waiting for saved changes") {
 		t.Fatal("Watch shortcut must focus sidebar activity without replacing Dashboard")
@@ -38,7 +38,7 @@ func TestDashboardDefaultAndNavigation(t *testing.T) {
 	if !m.dashboardVisible() || !strings.Contains(frame, "/   Overview") {
 		t.Fatal("Dashboard mouse tab must restore dashboard and focus label")
 	}
-	pressRune(t, m, '2')
+	pressRune(t, m, '1')
 	if m.contentTabButton != nil || m.contentTab {
 		t.Fatal("Content must not open before the first file is opened")
 	}
@@ -64,7 +64,7 @@ func TestDashboardUpdatesWhileOtherTabsRemainAvailable(t *testing.T) {
 	if !strings.Contains(frame, "1 changed files") {
 		t.Fatal("Dashboard must reflect live change counts")
 	}
-	pressRune(t, m, '1')
+	pressRune(t, m, 'w')
 	if !strings.Contains(render(m, 120, 32), "src/main.go") {
 		t.Fatal("Watch history must continue updating while Dashboard is active")
 	}

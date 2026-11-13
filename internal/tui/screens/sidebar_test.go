@@ -16,7 +16,7 @@ func TestWorkspaceSidebarPages(t *testing.T) {
 		}
 	}
 	selected, offset := m.selected, m.treeOffset
-	for i, text := range []string{"Add .guard/rules.yml", "Enter or click a finding", "Configure regex or JavaScript"} {
+	for i, text := range []string{"Add .guard/rules.yml", "Violations", "Configure regex or JavaScript"} {
 		rect := m.navigationItems[i].Rect()
 		m.HandleMouse(tui.MouseEvent{Button: tui.MouseLeft, X: rect.X, Y: rect.Y})
 		frame = render(m, 120, 32)
@@ -26,11 +26,11 @@ func TestWorkspaceSidebarPages(t *testing.T) {
 		if m.selected != selected || m.treeOffset != offset {
 			t.Fatal("page changes must preserve context navigation")
 		}
-		if !strings.Contains(frame, "1 Watch") || !strings.Contains(frame, "2 Content") {
+		if !strings.Contains(frame, "Watch  [w]") {
 			t.Fatal("utility tabs must remain available")
 		}
 	}
-	pressRune(t, m, '1')
+	pressRune(t, m, 'w')
 	render(m, 120, 32)
 	if !m.watchFocus || !m.dashboardVisible() {
 		t.Fatal("Watch must remain accessible alongside Rules")
@@ -51,27 +51,29 @@ func TestSidebarKeyboardFocus(t *testing.T) {
 	}
 
 	press(t, m, tui.KeyTab)
+	if !m.watchFocus {
+		t.Fatal("Tab from content must reach Watch")
+	}
+	press(t, m, tui.KeyTab)
 	if !m.navigationFocus || m.changesFocus {
-		t.Fatal("Tab from content must reach workspace navigation")
+		t.Fatal("Tab from Watch must reach workspace navigation")
 	}
 	press(t, m, tui.KeyDown)
 	press(t, m, tui.KeyEnter)
 	if m.workspacePage != violationsPage {
 		t.Fatal("keyboard menu activation must open Violations")
 	}
+	if !m.changesFocus {
+		t.Fatal("Enter on a workspace item must move focus into the page")
+	}
+	press(t, m, tui.KeyEscape)
 	press(t, m, tui.KeyTab)
 	if m.navigationFocus || m.changesFocus {
 		t.Fatal("Tab from navigation must return to context")
 	}
-	for key, page := range map[rune]workspacePage{'o': overviewPage, 'v': violationsPage, 'u': rulesPage} {
-		pressRune(t, m, key)
-		if m.workspacePage != page || !m.dashboardVisible() {
-			t.Fatalf("shortcut %c did not open page", key)
-		}
-	}
 }
 
-func TestWorkspaceFocusSkipsWatch(t *testing.T) {
+func TestWorkspaceFocusIncludesWatch(t *testing.T) {
 	m := testScreen()
 	render(m, 120, 32)
 	m.navigationFocus = true
@@ -82,8 +84,12 @@ func TestWorkspaceFocusSkipsWatch(t *testing.T) {
 	press(t, m, tui.KeyTab)
 	press(t, m, tui.KeyTab)
 	press(t, m, tui.KeyTab)
+	if !m.watchFocus {
+		t.Fatal("Tab from Context must focus Watch")
+	}
+	press(t, m, tui.KeyTab)
 	if !m.navigationFocus || m.watchFocus || len(m.navigationItems) != len(workspaceLabels) {
-		t.Fatal("Tab cycle must exclude sidebar Watch")
+		t.Fatal("Tab cycle must return to workspace navigation after Watch and the main pane")
 	}
 }
 
@@ -167,8 +173,8 @@ func TestReferenceSelectionAccent(t *testing.T) {
 			rect.X += m.tree.ContentRect().X
 			rect.Y += m.tree.ContentRect().Y
 		}
-		if rect.Height != 1 || !buffer.Cell(rect.X, rect.Y).Style.Fg.Equal(m.theme.Accent) {
-			t.Fatalf("selection must have a one-row left accent: rect=%+v cell=%+v border=%+v", rect, buffer.Cell(rect.X, rect.Y), item.Border())
+		if rect.Height != 1 || !item.Border().All(tui.BorderNone) {
+			t.Fatalf("sidebar rows must remain borderless: rect=%+v border=%+v", rect, item.Border())
 		}
 		if !buffer.Cell(rect.X+1, rect.Y).Style.Bg.Equal(m.theme.Selection) {
 			t.Fatal("selection inset must share the highlighted background")

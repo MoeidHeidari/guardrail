@@ -19,6 +19,7 @@ type Theme struct {
 	Navbar          tui.Color
 	Danger          tui.Color
 	Selection       tui.Color
+	SelectionText   tui.Color
 	ActiveSelection tui.Color
 	Separator       tui.Color
 }
@@ -26,20 +27,21 @@ type Theme struct {
 func Default() Theme {
 	return Theme{
 		Syntax:          "onedark",
-		Background:      tui.RGBColor(8, 20, 33),
-		Surface:         tui.RGBColor(10, 24, 39),
-		Foreground:      tui.RGBColor(215, 220, 229),
-		Muted:           tui.RGBColor(137, 145, 161),
-		Accent:          tui.RGBColor(110, 190, 255),
-		Added:           tui.RGBColor(152, 195, 121),
-		Modified:        tui.RGBColor(229, 192, 123),
-		Activity:        tui.RGBColor(198, 120, 221),
-		Chrome:          tui.RGBColor(8, 20, 33),
-		Navbar:          tui.RGBColor(11, 27, 43),
-		Danger:          tui.RGBColor(224, 108, 117),
-		Selection:       tui.RGBColor(14, 47, 77),
-		ActiveSelection: tui.RGBColor(42, 30, 60),
-		Separator:       tui.RGBColor(31, 57, 81),
+		Background:      tui.DefaultColor(),
+		Surface:         tui.DefaultColor(),
+		Foreground:      tui.DefaultColor(),
+		Muted:           tui.White,
+		Accent:          tui.Blue,
+		Added:           tui.Green,
+		Modified:        tui.Yellow,
+		Activity:        tui.Magenta,
+		Chrome:          tui.DefaultColor(),
+		Navbar:          tui.DefaultColor(),
+		Danger:          tui.Red,
+		Selection:       tui.RGBColor(45, 45, 45),
+		SelectionText:   tui.RGBColor(235, 235, 235),
+		ActiveSelection: tui.RGBColor(50, 44, 54),
+		Separator:       tui.BrightBlack,
 	}
 }
 
@@ -51,21 +53,12 @@ func Detect() Theme {
 }
 
 func Light() Theme {
-	return Theme{
-		Syntax:          "github",
-		Background:      tui.RGBColor(250, 251, 253),
-		Surface:         tui.RGBColor(241, 243, 247),
-		Foreground:      tui.RGBColor(36, 41, 51),
-		Muted:           tui.RGBColor(91, 101, 119),
-		Accent:          tui.RGBColor(38, 86, 185),
-		Added:           tui.RGBColor(36, 110, 53),
-		Modified:        tui.RGBColor(137, 87, 12),
-		Activity:        tui.RGBColor(128, 52, 164),
-		Chrome:          tui.RGBColor(233, 237, 243),
-		Navbar:          tui.RGBColor(228, 233, 242),
-		Danger:          tui.RGBColor(187, 45, 59),
-		Selection:       tui.RGBColor(220, 230, 249),
-		ActiveSelection: tui.RGBColor(237, 222, 248),
-		Separator:       tui.RGBColor(211, 217, 227),
-	}
+	theme := Default()
+	theme.Syntax = "github"
+	theme.Muted = tui.BrightBlack
+	theme.Separator = tui.White
+	theme.Selection = tui.RGBColor(235, 235, 235)
+	theme.SelectionText = tui.RGBColor(30, 30, 30)
+	theme.ActiveSelection = tui.RGBColor(237, 228, 241)
+	return theme
 }

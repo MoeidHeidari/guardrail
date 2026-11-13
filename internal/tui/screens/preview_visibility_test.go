@@ -134,9 +134,10 @@ func TestRulesFocusSkipsHiddenContent(t *testing.T) {
 		t.Fatal("Tab must reach files without opening content")
 	}
 	press(t, m, tui.KeyTab)
-	if !m.navigationFocus || m.rulesFocus != 0 {
+	if !m.watchFocus || m.rulesFocus != 0 {
 		t.Fatal("Tab must skip a hidden content pane")
 	}
+	m.watchFocus = false
 	m.navigationFocus, m.changesFocus, m.rulesFocus = false, true, 1
 	press(t, m, tui.KeyEnter)
 	render(m, 160, 40)
