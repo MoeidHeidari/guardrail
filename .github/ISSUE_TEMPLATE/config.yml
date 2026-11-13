@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private vulnerability report
+    url: https://github.com/MoeidHeidari/guardrail/blob/main/docs/SECURITY.md
+    about: Follow the security policy; do not disclose vulnerabilities in public issues.
+  - name: Usage and troubleshooting
+    url: https://github.com/MoeidHeidari/guardrail/blob/main/docs/SUPPORT.md
+    about: Read the support guide and reporting checklist before opening an issue.
