@@ -21,6 +21,8 @@ func (m *Main) activateRulesPane() bool {
 			return true
 		}
 		m.rulesPreviewOpened = true
+		m.rulesPath = ""
+		m.updateRuleFiles()
 	}
 	m.rulesFocus = min(2, m.rulesFocus+1)
 	return true
@@ -58,7 +60,7 @@ func (m *Main) renderRules() {
 	parent := m.feed
 	parent.Apply(tui.WithScrollable(tui.ScrollNone), tui.WithGap(1))
 	m.rulesList = components.NewContainer(theme, tui.WithHeight(0), tui.WithFlexGrow(1),
-		tui.WithScrollable(tui.ScrollVertical), tui.WithScrollOffset(0, m.findingOffset))
+		tui.WithScrollable(tui.ScrollBoth), tui.WithScrollOffset(m.rulesListX, m.findingOffset))
 	m.styleScrollbar(m.rulesList)
 	m.feed = m.rulesList
 	m.renderRuleList()
@@ -81,13 +83,18 @@ func (m *Main) renderRules() {
 	descriptionText := m.label(display(description))
 	descriptionText.Apply(tui.WithHeight(2), tui.WithWrap(true),
 		tui.WithTextStyle(tui.NewStyle().Foreground(theme.Muted)))
+	if m.renderHeight < 30 {
+		descriptionText.Apply(tui.WithHeight(1))
+	}
 	parent.AddChild(descriptionText)
 	m.rulesFiles = components.NewContainer(theme, tui.WithHeight(0), tui.WithFlexGrow(1),
-		tui.WithScrollable(tui.ScrollVertical))
+		tui.WithScrollable(tui.ScrollBoth))
 	m.styleScrollbar(m.rulesFiles)
 	for i, index := range m.rulesMatches {
 		finding := m.findings[index]
-		row := m.label(display(fmt.Sprintf("%s:%d [%s] %s", finding.Path, finding.Line, finding.Kind, finding.Rule)))
+		text := display(fmt.Sprintf("%s:%d [%s] %s", finding.Path, finding.Line, finding.Kind, finding.Rule))
+		row := m.label(text)
+		row.Apply(tui.WithWidth(tui.StringWidth(text)), tui.WithFlexShrink(0))
 		if i == m.rulesFileSelection {
 			row.Apply(tui.WithBackground(tui.Style{Bg: theme.Selection}),
 				tui.WithTextStyle(tui.Style{Fg: theme.Accent, Bg: theme.Selection}))
@@ -97,12 +104,15 @@ func (m *Main) renderRules() {
 	if len(m.rulesMatches) == 0 {
 		m.rulesFiles.AddChild(m.label("No findings for this rule or set."))
 	}
-	m.rulesFiles.Apply(tui.WithScrollOffset(0, max(0, m.rulesFileSelection-max(1, m.renderHeight/4))))
+	m.rulesFiles.Apply(tui.WithScrollOffset(m.rulesFilesX, max(0, m.rulesFileSelection-max(1, m.renderHeight/4))))
 	sets := make(map[string]bool)
 	for _, rule := range m.analysisResult.Rules {
 		sets[normalizedSet(rule.Set)] = true
 	}
-	left := m.overviewCard(fmt.Sprintf("%d rule sets / %d rules", len(sets), len(m.analysisResult.Rules)), 0, m.rulesList)
+	header := components.NewContainer(theme, tui.WithHeight(1), tui.WithFlexShrink(0),
+		tui.WithScrollable(tui.ScrollHorizontal), tui.WithScrollOffset(m.rulesListX, 0))
+	header.AddChild(m.ruleTableRow([]string{"Rule set / Rule", "Type", "Rules", "Files", "Violations", "Errors"}, false, true))
+	left := m.overviewCard(fmt.Sprintf("%d rule sets / %d rules", len(sets), len(m.analysisResult.Rules)), 0, header, m.rulesList)
 	right := m.overviewCard("Affected files / Findings", 0, m.rulesFiles)
 	for _, card := range []*tui.Element{left, right} {
 		card.Apply(tui.WithHeightPercent(100), tui.WithWidth(0), tui.WithFlexGrow(1), tui.WithMinWidth(0))
@@ -118,6 +128,7 @@ func (m *Main) renderRules() {
 	lists.AddChild(left, right)
 	if !m.rulesPreviewOpened {
 		m.rulesPreview = nil
+		m.rulesClose = nil
 		parent.AddChild(lists)
 		return
 	}
@@ -140,7 +151,7 @@ func (m *Main) renderRules() {
 	if m.rulesPath != "" {
 		title += " / " + display(m.rulesPath)
 	}
-	preview := m.overviewCard(title, max(5, (m.renderHeight-10)/2), m.rulesPreview)
+	preview := m.previewCard(title, max(5, (m.renderHeight-10)/2), m.rulesPreview, &m.rulesClose)
 	preview.Apply(tui.WithFlexShrink(0))
 	parent.AddChild(lists, preview)
 }

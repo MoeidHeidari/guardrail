@@ -10,6 +10,59 @@ import (
 	"github.com/grindlemire/go-tui"
 )
 
+func TestRulesTableColumnsAndHorizontalScrolling(t *testing.T) {
+	m := overviewFixture(t)
+	m.analysisResult.Rules = []config.Rule{{Set: "quality", ID: strings.Repeat("long-rule-", 7) + "end", Type: "regex"}}
+	m.openWorkspace(rulesPage)
+	frame := render(m, 160, 40)
+	if !strings.Contains(frame, "Rule set / Rule") || !strings.Contains(frame, "[-] quality") {
+		t.Fatalf("rules table must show headings and grouped rows:\n%s", frame)
+	}
+	maximum, _ := m.rulesList.MaxScroll()
+	if maximum == 0 {
+		t.Fatal("long rules must overflow horizontally")
+	}
+	m.changesFocus = true
+	for range 100 {
+		pressRune(t, m, ']')
+	}
+	render(m, 160, 40)
+	if m.rulesListX != maximum {
+		t.Fatal("rules table must scroll horizontally")
+	}
+	header := m.rulesList.Parent().Children()[1]
+	x, _ := header.ScrollOffset()
+	if x != m.rulesListX {
+		t.Fatal("table header and rows must remain aligned")
+	}
+	press(t, m, tui.KeyLeft)
+	render(m, 160, 40)
+	if len(m.rulesItems) != 1 {
+		t.Fatal("Left must still collapse the selected set")
+	}
+}
+
+func TestRulesTableImpactColors(t *testing.T) {
+	for _, theme := range []styles.Theme{styles.Default(), styles.Light()} {
+		m := overviewFixture(t)
+		m.theme = theme
+		m.openWorkspace(rulesPage)
+		render(m, 160, 40)
+		set := m.rulesList.Children()[0].Children()
+		if !set[0].TextStyle().Fg.Equal(theme.Accent) ||
+			!set[4].TextStyle().Fg.Equal(theme.Modified) ||
+			!set[5].TextStyle().Fg.Equal(theme.Danger) {
+			t.Fatal("set names and nonzero impact counts must use theme colors")
+		}
+		m.findings = nil
+		render(m, 160, 40)
+		set = m.rulesList.Children()[0].Children()
+		if !set[4].TextStyle().Fg.Equal(theme.Muted) || !set[5].TextStyle().Fg.Equal(theme.Muted) {
+			t.Fatal("zero impact counts must remain muted")
+		}
+	}
+}
+
 func TestRuleImpactUniqueFilesAndSetIsolation(t *testing.T) {
 	m := testScreen()
 	m.BeginAnalysis(1)
@@ -45,8 +98,8 @@ func TestRuleImpactUniqueFilesAndSetIsolation(t *testing.T) {
 		buffer := tui.NewBuffer(160, 80)
 		m.feed.RenderTo(buffer, 160, 80)
 		frame := buffer.StringTrimmed()
-		for _, text := range []string{"[-] go", "2 files / 3 violations / 1 errors",
-			"1 files / 2 violations / 1 errors", "[-] python", "same  [regex]"} {
+		for _, text := range []string{"[-] go          -          2     2     3          1",
+			"same        regex      -     1     2          1", "[-] python"} {
 			if !strings.Contains(frame, text) {
 				t.Fatalf("missing impact text %q:\n%s", text, frame)
 			}

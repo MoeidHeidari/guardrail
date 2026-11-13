@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/MoeidHeidari/guardrail/internal/config"
+	"github.com/MoeidHeidari/guardrail/internal/tui/components"
 	"github.com/grindlemire/go-tui"
 )
 
@@ -66,6 +67,7 @@ func (m *Main) renderRuleList() {
 	}
 	sort.Strings(names)
 	m.rulesItems = nil
+	var rows [][]string
 	for _, set := range names {
 		m.rulesItems = append(m.rulesItems, ruleKey{set, ""})
 		impact := impactFor(setImpacts, set)
@@ -73,35 +75,74 @@ func (m *Main) renderRuleList() {
 		if m.collapsedRuleSets[set] {
 			marker = "[+]"
 		}
-		m.feed.AddChild(m.label(display(fmt.Sprintf("%s %s / %d rules / %d files / %d violations / %d errors",
-			marker, set, len(grouped[set]), len(impact.files), impact.violations, impact.errors))))
+		rows = append(rows, []string{marker + " " + set, "-", fmt.Sprint(len(grouped[set])),
+			fmt.Sprint(len(impact.files)), fmt.Sprint(impact.violations), fmt.Sprint(impact.errors)})
 		if m.collapsedRuleSets[set] {
 			continue
 		}
 		for _, rule := range grouped[set] {
 			m.rulesItems = append(m.rulesItems, ruleKey{set, rule.ID})
 			impact := impactFor(ruleImpacts, ruleKey{set, rule.ID})
-			m.feed.AddChild(m.label(display(fmt.Sprintf("    %s  [%s] / %d files / %d violations / %d errors",
-				rule.ID, rule.Type, len(impact.files), impact.violations, impact.errors))))
+			rows = append(rows, []string{"    " + rule.ID, rule.Type, "-",
+				fmt.Sprint(len(impact.files)), fmt.Sprint(impact.violations), fmt.Sprint(impact.errors)})
 		}
-
+	}
+	m.ruleWidths = []int{15, 10, 5, 5, 10, 6}
+	for _, row := range rows {
+		for i, value := range row {
+			m.ruleWidths[i] = max(m.ruleWidths[i], tui.StringWidth(display(value)))
+		}
 	}
 	if len(grouped) == 0 {
 		m.feed.AddChild(m.label("Configure regex or JavaScript functions in .guard/rules.yml."))
 	}
 	m.rulesSelection = min(m.rulesSelection, max(0, len(m.rulesItems)-1))
 	if len(m.rulesItems) > 0 {
-		for i, row := range m.feed.Children() {
-			color := m.theme.Background
-			if i == m.rulesSelection {
-				color = m.theme.Accent
-			}
-			row.Apply(tui.WithPaddingTRBL(0, 1, 0, 1),
-				tui.WithBorderTRBL(tui.BorderNone, tui.BorderNone, tui.BorderNone, tui.BorderSingle),
-				tui.WithBorderStyle(tui.Style{Fg: color, Bg: m.theme.Background}))
+		for i, values := range rows {
+			m.feed.AddChild(m.ruleTableRow(values, i == m.rulesSelection, false))
 		}
 		m.selectedRuleSet = m.rulesItems[m.rulesSelection].set
 	}
+}
+
+func (m *Main) ruleTableRow(values []string, selected, heading bool) *tui.Element {
+	theme := m.theme
+	theme.Surface = theme.Background
+	color := theme.Background
+	if selected {
+		color = theme.Accent
+	}
+	width := 3 + len(values) - 1
+	for _, column := range m.ruleWidths {
+		width += column
+	}
+	row := components.NewContainer(theme, tui.WithDirection(tui.Row), tui.WithGap(1),
+		tui.WithHeight(1), tui.WithWidth(width), tui.WithFlexShrink(0),
+		tui.WithPaddingTRBL(0, 1, 0, 1),
+		tui.WithBorderTRBL(tui.BorderNone, tui.BorderNone, tui.BorderNone, tui.BorderSingle),
+		tui.WithBorderStyle(tui.Style{Fg: color, Bg: theme.Background}))
+	for i, value := range values {
+		color := theme.Foreground
+		if heading {
+			color = theme.Muted
+		} else if i == 0 && values[2] != "-" {
+			color = theme.Accent
+		} else if i == 1 || (i >= 3 && value == "0") {
+			color = theme.Muted
+		} else if i == 4 && value != "0" {
+			color = theme.Modified
+		} else if i == 5 && value != "0" {
+			color = theme.Danger
+		}
+		style := tui.NewStyle().Foreground(color)
+		if heading || (i == 0 && values[2] != "-") {
+			style = style.Bold()
+		}
+		cell := m.label(display(value))
+		cell.Apply(tui.WithWidth(m.ruleWidths[i]), tui.WithFlexShrink(0), tui.WithTextStyle(style))
+		row.AddChild(cell)
+	}
+	return row
 }
 
 func ruleDescription(rule config.Rule) string {

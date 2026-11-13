@@ -87,6 +87,8 @@ The context tree opens one level deep. Child folders remain collapsed until open
 | Navigate | Arrow keys or `h` / `j` / `k` / `l` |
 | Toggle a folder or preview a file | `Enter`, `Space`, or click |
 | Scroll | Mouse wheel, `PageUp` / `PageDown`, or drag a scrollbar |
+| Scroll horizontally | `[` / `]` in the focused pane; Shift+wheel over Context or Watch |
+| Close a preview | Click `[x]` or press `x` |
 | Quit | `q` or `Ctrl+C` |
 
 `[A]` means added, `[M]` means modified, and `[*]` marks an affected ancestor folder.
