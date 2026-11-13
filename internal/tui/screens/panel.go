@@ -47,6 +47,7 @@ func (m *Main) renderPanel() *tui.Element {
 	}
 	m.dashboardButton = m.label(pageLabel)
 	m.contentTabButton = nil
+	m.contentClose = nil
 	active := m.dashboardButton
 	switch {
 	case m.contentTab:
@@ -84,6 +85,10 @@ func (m *Main) renderPanel() *tui.Element {
 	tabs.AddChild(m.dashboardButton)
 	if m.contentTabButton != nil {
 		tabs.AddChild(m.contentTabButton)
+		m.contentClose = m.label("[x]")
+		m.contentClose.Apply(tui.WithWidth(3),
+			tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Muted)))
+		tabs.AddChild(m.contentClose)
 	}
 	content := components.NewSection(editorTheme, "", tabs)
 	if m.contentTab {
@@ -113,6 +118,84 @@ func (m *Main) renderPanel() *tui.Element {
 	}
 	content.Apply(tui.WithPaddingTRBL(1, 2, 1, 2))
 	return content
+}
+
+func (m *Main) previewCard(title string, height int, content *tui.Element, closeButton **tui.Element) *tui.Element {
+	heading := m.label(title)
+	heading.Apply(tui.WithWidth(0), tui.WithFlexGrow(1), tui.WithMinWidth(0),
+		tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Muted).Bold()))
+	button := m.label("[x]")
+	button.Apply(tui.WithWidth(3), tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Muted)))
+	theme := m.theme
+	theme.Surface = theme.Background
+	row := components.NewContainer(theme, tui.WithDirection(tui.Row), tui.WithHeight(1), tui.WithFlexShrink(0))
+	row.AddChild(heading, button)
+	card := components.NewSection(theme, "", row, content)
+	card.Apply(tui.WithHeight(height), tui.WithFlexShrink(1),
+		tui.WithPaddingTRBL(0, 1, 0, 1), tui.WithBorder(tui.BorderRounded),
+		tui.WithBorderStyle(tui.Style{Fg: theme.Separator, Bg: theme.Background}))
+	*closeButton = button
+	return card
+}
+
+func (m *Main) closeContent() {
+	m.contentOpened, m.contentTab = false, false
+	m.dashboardTab = true
+	m.contentClose = nil
+	m.invalidatePreview()
+}
+
+func (m *Main) closeOverviewPreview() {
+	m.overviewPreviewOpened, m.overviewPreviewFocus = false, false
+	m.overviewPreview, m.overviewClose = nil, nil
+	m.overviewPath = ""
+	m.invalidatePreview()
+}
+
+func (m *Main) closeRulesPreview() {
+	m.rulesPreviewOpened = false
+	m.rulesPreview, m.rulesClose = nil, nil
+	m.rulesPath = ""
+	if m.rulesFocus == 2 {
+		m.rulesFocus = 1
+	}
+	m.invalidatePreview()
+}
+
+func (m *Main) invalidatePreview() {
+	m.previewID++
+	m.requestedPath = ""
+	m.previewDirty = true
+	m.jumpLine, m.jumpColumn = 0, 0
+	m.dragPane = nil
+}
+
+func (m *Main) closeActivePreview() {
+	switch {
+	case m.contentTab:
+		m.closeContent()
+	case m.overviewVisible() && m.overviewPreviewOpened:
+		m.closeOverviewPreview()
+	case m.rulesVisible() && m.rulesPreviewOpened:
+		m.closeRulesPreview()
+	}
+}
+
+func (m *Main) handlePreviewClose(event tui.MouseEvent) bool {
+	if event.Button != tui.MouseLeft {
+		return false
+	}
+	switch {
+	case m.contentOpened && m.contentClose != nil && m.contentClose.Rect().Contains(event.X, event.Y):
+		m.closeContent()
+	case m.overviewVisible() && m.overviewPreviewOpened && m.overviewClose != nil && m.overviewClose.Rect().Contains(event.X, event.Y):
+		m.closeOverviewPreview()
+	case m.rulesVisible() && m.rulesPreviewOpened && m.rulesClose != nil && m.rulesClose.Rect().Contains(event.X, event.Y):
+		m.closeRulesPreview()
+	default:
+		return false
+	}
+	return true
 }
 
 func (m *Main) renderDashboard() {

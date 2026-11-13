@@ -125,6 +125,102 @@ func TestLargePreviewUsesBoundedElements(t *testing.T) {
 	}
 }
 
+func TestSidebarHorizontalScroll(t *testing.T) {
+	m := testScreen()
+	name := strings.Repeat("long-name-", 8) + "tail.go"
+	m.Apply(watcher.Update{Upsert: []watcher.Entry{{Path: name}},
+		Changes: []watcher.Change{{Path: name, Kind: "modified", Time: time.Now()}}})
+	render(m, 120, 32)
+	maximum, _ := m.tree.MaxScroll()
+	if maximum == 0 {
+		t.Fatal("long context entries must overflow horizontally")
+	}
+	for range 100 {
+		pressRune(t, m, ']')
+	}
+	buffer := tui.NewBuffer(120, 32)
+	m.Render(nil).RenderTo(buffer, 120, 32)
+	rect := m.tree.ContentRect()
+	var row strings.Builder
+	for x := rect.X; x < rect.Right(); x++ {
+		row.WriteRune(buffer.Cell(x, rect.Y+m.rowPositions[name]).Rune)
+	}
+	if !strings.Contains(row.String(), "tail.go") || m.treeX != maximum {
+		t.Fatal("context scrolling must reveal the end of long names")
+	}
+	for range 100 {
+		pressRune(t, m, '[')
+	}
+	if m.treeX != 0 {
+		t.Fatal("context horizontal offset must clamp at zero")
+	}
+	pressRune(t, m, '1')
+	render(m, 120, 32)
+	maximum, _ = m.watchPane.MaxScroll()
+	if maximum == 0 {
+		t.Fatal("long Watch paths must overflow horizontally")
+	}
+	for range 100 {
+		press(t, m, tui.KeyRight)
+	}
+	frame := render(m, 120, 32)
+	if m.watchX != maximum || !strings.Contains(frame, "tail.go") {
+		t.Fatal("Watch scrolling must reveal the end of long paths")
+	}
+	press(t, m, tui.KeyLeft)
+	if m.watchX >= maximum {
+		t.Fatal("Watch must scroll left")
+	}
+}
+
+func TestSidebarShiftWheelHorizontalScroll(t *testing.T) {
+	m := testScreen()
+	name := strings.Repeat("long-name-", 8) + "tail.go"
+	m.Apply(watcher.Update{Upsert: []watcher.Entry{{Path: name}},
+		Changes: []watcher.Change{{Path: name, Kind: "modified", Time: time.Now()}}})
+	render(m, 120, 32)
+	m.navigationFocus = true
+	rect := m.tree.ContentRect()
+	event := tui.MouseEvent{Button: tui.MouseWheelDown, Mod: tui.ModShift, X: rect.X, Y: rect.Y}
+	if !m.HandleMouse(event) || m.treeX != 4 || m.navigationFocus || m.treeOffset != 0 {
+		t.Fatal("Shift+wheel over Context must focus and scroll it horizontally")
+	}
+	render(m, 120, 32)
+	event.Button = tui.MouseWheelUp
+	m.HandleMouse(event)
+	if m.treeX != 0 {
+		t.Fatal("Shift+wheel up must scroll Context left")
+	}
+	rect = m.watchPane.ContentRect()
+	event.Button, event.X, event.Y = tui.MouseWheelDown, rect.X, rect.Y
+	if !m.HandleMouse(event) || !m.watchFocus || m.watchX != 4 || m.changeOffset != 0 {
+		t.Fatal("Shift+wheel over Watch must scroll activity horizontally")
+	}
+}
+
+func TestContextArrowHorizontalScroll(t *testing.T) {
+	m := testScreen()
+	name := "src/" + strings.Repeat("long-name-", 8) + "tail.go"
+	m.Apply(watcher.Update{Upsert: []watcher.Entry{{Path: name}}})
+	m.selected = m.rowPositions[name]
+	render(m, 120, 32)
+	selected := m.selected
+	press(t, m, tui.KeyRight)
+	render(m, 120, 32)
+	x, _ := m.tree.ScrollOffset()
+	if x != 4 || m.treeX != 4 || m.selected != selected {
+		t.Fatal("Right on a file must horizontally scroll Context without moving selection")
+	}
+	press(t, m, tui.KeyLeft)
+	if m.treeX != 0 || m.selected != selected {
+		t.Fatal("Left must scroll back before navigating to the parent")
+	}
+	press(t, m, tui.KeyLeft)
+	if m.rows[m.selected].entry.Path != "src" {
+		t.Fatal("Left at the beginning must preserve parent navigation")
+	}
+}
+
 func BenchmarkActivityFrame(b *testing.B) {
 	m := NewMain(styles.Default(), "/workspace", watcher.Update{Entries: []watcher.Entry{{Path: "."}}})
 	m.entries = testScreen().entries

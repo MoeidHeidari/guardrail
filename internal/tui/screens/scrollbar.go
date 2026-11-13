@@ -2,6 +2,69 @@ package screens
 
 import "github.com/grindlemire/go-tui"
 
+func scrollHorizontal(pane *tui.Element, offset *int, delta int) {
+	if pane == nil {
+		return
+	}
+	maximum, _ := pane.MaxScroll()
+	*offset = max(0, min(*offset+delta, maximum))
+}
+
+func (m *Main) scrollSidebarX(delta int) {
+	if m.watchFocus {
+		scrollHorizontal(m.watchPane, &m.watchX, delta)
+	} else if !m.navigationFocus && !m.changesFocus {
+		scrollHorizontal(m.tree, &m.treeX, delta)
+	}
+}
+
+func (m *Main) handleSidebarHorizontalWheel(event tui.MouseEvent) bool {
+	if event.Mod&tui.ModShift == 0 || (event.Button != tui.MouseWheelUp && event.Button != tui.MouseWheelDown) {
+		return false
+	}
+	delta := 4
+	if event.Button == tui.MouseWheelUp {
+		delta = -delta
+	}
+	switch {
+	case m.tree != nil && m.tree.Rect().Contains(event.X, event.Y):
+		m.watchFocus, m.navigationFocus, m.changesFocus = false, false, false
+	case m.watchPane != nil && m.watchPane.Rect().Contains(event.X, event.Y):
+		m.watchFocus, m.navigationFocus, m.changesFocus = true, false, false
+	default:
+		return false
+	}
+	m.scrollSidebarX(delta)
+	return true
+}
+
+func (m *Main) scrollFocusedX(delta int) {
+	if m.watchFocus || (!m.navigationFocus && !m.changesFocus) {
+		m.scrollSidebarX(delta)
+		return
+	}
+	if !m.changesFocus {
+		return
+	}
+	if m.rulesVisible() {
+		switch m.rulesFocus {
+		case 0:
+			scrollHorizontal(m.rulesList, &m.rulesListX, delta)
+		case 1:
+			scrollHorizontal(m.rulesFiles, &m.rulesFilesX, delta)
+		case 2:
+			m.scrollOverviewX(delta)
+		}
+		return
+	}
+	if m.scrollFindingX(delta) || m.scrollOverviewX(delta) {
+		return
+	}
+	if m.contentTab {
+		m.scrollContentX(delta)
+	}
+}
+
 func viewport(el *tui.Element) int {
 	if el == nil {
 		return 10

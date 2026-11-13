@@ -59,6 +59,7 @@ func (m *Main) expand() {
 		return
 	}
 	if m.watchFocus {
+		m.scrollSidebarX(4)
 		return
 	}
 	if m.navigationFocus {
@@ -77,6 +78,8 @@ func (m *Main) expand() {
 		m.toggle()
 	} else if entry.IsDir() && m.selected+1 < len(m.rows) && m.rows[m.selected+1].depth > m.rows[m.selected].depth {
 		m.move(1)
+	} else {
+		m.scrollSidebarX(4)
 	}
 }
 
@@ -88,6 +91,7 @@ func (m *Main) collapse() {
 		return
 	}
 	if m.watchFocus {
+		m.scrollSidebarX(-4)
 		return
 	}
 	if m.navigationFocus {
@@ -98,6 +102,10 @@ func (m *Main) collapse() {
 		return
 	}
 	if m.changesFocus || len(m.rows) == 0 {
+		return
+	}
+	if m.treeX > 0 {
+		m.scrollSidebarX(-4)
 		return
 	}
 	entry := m.rows[m.selected].entry
@@ -145,6 +153,9 @@ func (m *Main) KeyMap() tui.KeyMap {
 		tui.On(tui.Rune('v'), func(tui.KeyEvent) { m.openWorkspace(violationsPage) }),
 		tui.On(tui.Rune('u'), func(tui.KeyEvent) { m.openWorkspace(rulesPage) }),
 		tui.On(tui.Rune('r'), func(tui.KeyEvent) { m.previewDirty = true }),
+		tui.On(tui.Rune('x'), func(tui.KeyEvent) { m.closeActivePreview() }),
+		tui.On(tui.Rune('['), func(tui.KeyEvent) { m.scrollFocusedX(-4) }),
+		tui.On(tui.Rune(']'), func(tui.KeyEvent) { m.scrollFocusedX(4) }),
 		tui.On(tui.Rune('a'), func(tui.KeyEvent) {
 			if m.findingsVisible() || m.overviewVisible() {
 				m.setFindingFilter("")
@@ -183,6 +194,12 @@ func (m *Main) HandleMouse(event tui.MouseEvent) bool {
 	}
 	if event.Action != tui.MousePress {
 		return false
+	}
+	if m.handleSidebarHorizontalWheel(event) {
+		return true
+	}
+	if m.handlePreviewClose(event) {
+		return true
 	}
 	if m.handleFilterMouse(event) {
 		return true

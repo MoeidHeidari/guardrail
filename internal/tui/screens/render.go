@@ -76,8 +76,8 @@ func (m *Main) Render(app *tui.App) *tui.Element {
 	}
 	header := components.NewHeader(m.theme, "GUARDRAIL", display(filepath.Base(m.root))+"  /  workspace")
 	m.tree = components.NewContainer(m.theme, tui.WithFlexGrow(1),
-		tui.WithHeight(0), tui.WithScrollable(tui.ScrollVertical),
-		tui.WithScrollOffset(0, m.treeOffset))
+		tui.WithHeight(0), tui.WithScrollable(tui.ScrollBoth),
+		tui.WithScrollOffset(m.treeX, m.treeOffset))
 	m.styleScrollbar(m.tree)
 	start := min(m.treeOffset/treeRowHeight, len(m.rows))
 	end := min(len(m.rows), start+max(100, m.renderHeight))
@@ -140,6 +140,7 @@ func (m *Main) Render(app *tui.App) *tui.Element {
 			background = m.theme.Chrome
 		}
 		m.styleSidebarRow(el, i == m.selected, background)
+		el.Apply(tui.WithWidth(tui.StringWidth(el.Text())+3), tui.WithFlexShrink(0))
 		m.tree.AddChild(el)
 		if changing && active {
 			m.animationRows[row.entry.Path] = el

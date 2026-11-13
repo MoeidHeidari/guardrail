@@ -31,6 +31,8 @@ type Main struct {
 	rulesItems                                []ruleKey
 	rulesMatches                              []int
 	rulesPath                                 string
+	rulesListX, rulesFilesX                   int
+	ruleWidths                                []int
 	findingX                                  int
 	findingFilter                             string
 	filterButtons                             []*tui.Element
@@ -51,6 +53,7 @@ type Main struct {
 	changes                                   []watcher.Change
 	selected                                  int
 	treeOffset                                int
+	treeX, watchX                             int
 	changeOffset                              int
 	changesFocus                              bool
 	tree                                      *tui.Element
@@ -70,6 +73,7 @@ type Main struct {
 	previewDirty                              bool
 	watchTabButton                            *tui.Element
 	contentTabButton                          *tui.Element
+	contentClose, overviewClose, rulesClose   *tui.Element
 	animationFrame                            int
 	activeUntil                               map[string]time.Time
 	animationRows                             map[string]*tui.Element

@@ -25,6 +25,8 @@ func (m *Main) renderActivity(pane *tui.Element) {
 			tui.TextSpan{Text: change.Time.Format("15:04") + " ", Style: tui.Style{Fg: m.theme.Muted}},
 			tui.TextSpan{Text: fmt.Sprintf("%s ", marker), Style: tui.Style{Fg: color}},
 			tui.TextSpan{Text: display(change.Path)}))
+		row.Apply(tui.WithWidth(tui.StringWidth(change.Time.Format("15:04")+" "+marker+" "+display(change.Path))),
+			tui.WithFlexShrink(0))
 		pane.AddChild(row)
 	}
 }

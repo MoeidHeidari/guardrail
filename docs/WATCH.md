@@ -13,6 +13,10 @@ Workspace navigation, Context rows, and Watch use compact single-line items with
 horizontal text insets. Selection uses a restrained tinted background and a thin
 blue left accent, without tall boxes or extra blank rows. The accent column is
 reserved for every row so changing selection does not shift the text.
+Use `[` / `]` when Context or Watch is focused, or Shift+mouse wheel over either
+section, to scroll long names and paths horizontally.
+Right/`l` also scrolls long file names in Context; Left/`h` scrolls back before
+returning to parent-folder navigation. Folder expansion remains unchanged.
 Navigation contains Overview, Violations,
 and Rules. Choose a page with a click, `o` / `v` / `u`, or focus navigation with
 `Tab` and use Up/Down then `Enter`. Page selection preserves tree state.
@@ -35,13 +39,15 @@ It shows the context path, entry count, changed-file count, and analysis status.
 Violations shows policy violations and execution errors; Rules lists active
 regex/JavaScript rules. Missing or invalid configuration is explicitly reported.
 Rules groups entries by rule set, with live impact summaries for each set and
-rule: unique affected files, violation occurrences and violating files, and
-execution errors and files with errors.
-The Rules workspace uses a compact tree on the left: rule sets are parents
-and their rules are indented children. Only the selected row has an accent
-border, with no background highlight. Left/Right collapses/expands sets.
-The tree heading shows the total number of rule sets and rules, even when sets
-are collapsed. Matching file findings appear on the right. The full-width content
+rule: unique affected files, violation occurrences, and execution errors.
+The Rules workspace uses a grouped table on the left: rule sets are parents
+and their rules are indented children, with columns for type, rule count, affected
+files, violations, and errors. Only the selected row has an accent
+border, with no background highlight. Set names use the accent color; nonzero
+violation and error counts use the warning and error colors. Left/Right collapses/expands sets.
+The table heading shows the total number of rule sets and rules, even when sets
+are collapsed. Use `[` / `]` to scroll its columns or the file list horizontally.
+Matching file findings appear on the right. The full-width content
 preview stays hidden until you click a file finding, navigate the file list,
 or press Enter there. Once opened, it gets more vertical space than the compact,
 scrollable lists above.
@@ -69,8 +75,8 @@ in a subtitle; Content retains its file breadcrumb.
 Once Content is available, the heading becomes the first main tab and follows
 the selected workspace page. Press `0` to return to
 that page after using Content. Watch is a scrollable sidebar section below Context,
-not a page or main tab. Content appears only after opening a file for the first time and
-then remains available as a main tab. Watching continues throughout.
+not a page or main tab. Content appears after opening a file and remains available
+as a main tab until closed. Watching continues throughout.
 
 ### Watch
 
@@ -89,7 +95,7 @@ is retained until the relevant events leave the bounded history.
 ### Content
 
 Open a file with a click or `Enter` to reveal the read-only Content tab.
-Afterward, press `2` to return to it. While Content is active, changing the tree selection previews
+Afterward, press `2` to return to it until it is closed. While Content is active, changing the tree selection previews
 the newly selected file.
 
 The breadcrumb shows the file, detected language, and size. Chroma selects syntax
@@ -154,6 +160,7 @@ highlight and marker remain after animation stops. Folder markers do not animate
 ## Preview behavior
 
 - File previews refresh after saves and support vertical and horizontal scrolling.
+- Click `[x]` or press `x` to close the active preview; select a file or finding to reopen it.
 - Supported content is UTF-8 regular files up to 1 MiB and 20,000 lines.
 - Binary files, symlinks, oversized files, and read errors show an explicit message.
 - Tabs display as four spaces, CRLF endings are normalized, and other control
@@ -179,11 +186,14 @@ treated as one region. You can scroll manually until the next text change.
 | Up/Down or `k`/`j` | Move tree/finding selection or scroll Watch/Content/Rules |
 | Right or `l` | Expand a folder/select its first child; in Content, scroll right |
 | Left or `h` | Collapse a folder/select its parent; in Content, scroll left |
+| `[` / `]` | Scroll the focused Context, Watch, table, findings, or preview pane horizontally |
+| `x` | Close the active content preview |
 | `Enter` / `Space` | Toggle the selected folder, open a file, or open a focused finding |
 | `Home` / `End` | Jump to first/last tree entry, retained event, or content line |
 | `PageUp` / `PageDown` | Move by a page in the active pane |
 | Left click | Focus a pane, select a tree entry, toggle a folder, or open a file |
 | Mouse wheel | Scroll the pane under the pointer |
+| Shift+mouse wheel | Scroll Context or Watch horizontally |
 | Scrollbar track click | Move one page |
 | Scrollbar thumb drag | Scroll; dragging remains captured outside the track until release |
 | `r` | Reload the selected preview, including retrying a read error |

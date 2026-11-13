@@ -151,6 +151,7 @@ func (m *Main) renderOverviewWorkspace() {
 	}
 	if !m.overviewPreviewOpened {
 		m.overviewPreview = nil
+		m.overviewClose = nil
 		summaries.Apply(tui.WithWidthPercent(100))
 		body.AddChild(summaries)
 		m.feed.AddChild(body)
@@ -180,7 +181,7 @@ func (m *Main) renderOverviewWorkspace() {
 	if m.overviewPath != "" {
 		title += " / " + display(m.overviewPath)
 	}
-	preview := m.overviewCard(title, 0, m.overviewPreview)
+	preview := m.previewCard(title, 0, m.overviewPreview, &m.overviewClose)
 	preview.Apply(tui.WithHeight(0), tui.WithFlexGrow(1), tui.WithMinHeight(0), tui.WithMinWidth(0),
 		tui.WithWidthPercent(60))
 	if direction == tui.Column {
@@ -264,8 +265,7 @@ func (m *Main) scrollOverviewX(delta int) bool {
 		m.scrollContentX(delta)
 		m.feed = feed
 	} else if m.overviewList != nil {
-		maximum, _ := m.overviewList.MaxScroll()
-		m.overviewListX = max(0, min(m.overviewListX+delta, maximum))
+		scrollHorizontal(m.overviewList, &m.overviewListX, delta)
 	}
 	return true
 }

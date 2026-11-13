@@ -90,7 +90,6 @@ func (m *Main) scrollFindingX(delta int) bool {
 	if !m.findingsVisible() || !m.changesFocus || m.feed == nil {
 		return false
 	}
-	maximum, _ := m.feed.MaxScroll()
-	m.findingX = max(0, min(m.findingX+delta, maximum))
+	scrollHorizontal(m.feed, &m.findingX, delta)
 	return true
 }

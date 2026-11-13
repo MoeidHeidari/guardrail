@@ -112,7 +112,7 @@ func (m *Main) renderSidebar() *tui.Element {
 	m.styleSidebarRow(m.watchTabButton, m.watchFocus ||
 		(m.navigationFocus && m.navigationIndex == len(workspaceLabels)), m.theme.Selection)
 	m.watchPane = components.NewContainer(m.theme, tui.WithHeight(0), tui.WithFlexGrow(1),
-		tui.WithScrollable(tui.ScrollVertical), tui.WithScrollOffset(0, m.changeOffset))
+		tui.WithScrollable(tui.ScrollBoth), tui.WithScrollOffset(m.watchX, m.changeOffset))
 	m.styleScrollbar(m.watchPane)
 	m.renderActivity(m.watchPane)
 	utilities := components.NewSection(m.theme, "", m.watchTabButton, m.watchPane)
