@@ -55,6 +55,15 @@ type Main struct {
 	treeOffset                                int
 	treeX, watchX                             int
 	changeOffset                              int
+	watchSelection                            int
+	searchOpen                                bool
+	searchQuery                               []rune
+	searchSelection                           int
+	searchButton                              *tui.Element
+	searchRows                                []*tui.Element
+	searchPaths                               []string
+	searchViewer                              *Main
+	searchPreviewFocus                        bool
 	changesFocus                              bool
 	tree                                      *tui.Element
 	feed                                      *tui.Element
@@ -74,6 +83,13 @@ type Main struct {
 	watchTabButton                            *tui.Element
 	contentTabButton                          *tui.Element
 	contentClose, overviewClose, rulesClose   *tui.Element
+	contentTabs                               []string
+	tabStart, tabEnd                          int
+	tabMore                                   [2]*tui.Element
+	returnToTree                              bool
+	contentActive                             string
+	tabViews                                  map[string][2]int
+	contentTabButtons, contentCloses          []*tui.Element
 	animationFrame                            int
 	activeUntil                               map[string]time.Time
 	animationRows                             map[string]*tui.Element
@@ -193,6 +209,9 @@ func (m *Main) Apply(update watcher.Update) {
 			strings.HasPrefix(m.preview.path, change.Path+string(filepath.Separator)) {
 			m.previewDirty = true
 		}
+		if m.searchViewer != nil {
+			m.searchViewer.previewDirty = true
+		}
 		if change.Kind == "deleted" {
 			delete(m.collapsed, change.Path)
 			delete(m.status, change.Path)
@@ -210,6 +229,9 @@ func (m *Main) Apply(update watcher.Update) {
 	}
 	if m.changeOffset > 0 {
 		m.changeOffset += len(update.Changes)
+	}
+	if m.watchSelection > 0 || (m.watchFocus && len(m.changes) > 0) {
+		m.watchSelection = min(historyLimit-1, m.watchSelection+len(update.Changes))
 	}
 	incoming := update.Changes
 	if len(incoming) >= historyLimit {

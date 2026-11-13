@@ -77,13 +77,32 @@ func (m *Main) renderFindingFilters() *tui.Element {
 		button := m.label(label)
 		button.Apply(tui.WithWidth(len(label)), tui.WithFlexShrink(0))
 		if m.findingFilter == findingFilters[i] {
-			button.Apply(tui.WithTextStyle(tui.NewStyle().Foreground(theme.Accent).Bold()),
+			button.Apply(tui.WithTextStyle(tui.NewStyle().Foreground(theme.SelectionText).Background(theme.Selection).Bold()),
 				tui.WithBackground(tui.Style{Bg: theme.Selection}))
 		}
 		row.AddChild(button)
 		m.filterButtons = append(m.filterButtons, button)
 	}
 	return row
+}
+
+// stepFilter selects the neighbouring filter; it reports false at the edges.
+func (m *Main) stepFilter(delta int) bool {
+	if !m.changesFocus || m.overviewPreviewFocus || (!m.findingsVisible() && !m.overviewVisible()) {
+		return false
+	}
+	current := 0
+	for i, filter := range findingFilters {
+		if filter == m.findingFilter {
+			current = i
+		}
+	}
+	next := current + delta
+	if next < 0 || next >= len(findingFilters) {
+		return false
+	}
+	m.setFindingFilter(findingFilters[next])
+	return true
 }
 
 func (m *Main) scrollFindingX(delta int) bool {

@@ -51,12 +51,12 @@ func TestRuleSetsAndRulesTree(t *testing.T) {
 		t.Fatal("Tab must move from tree to affected files")
 	}
 	m.rulesFocus, m.rulesSelection = 0, 0
-	press(t, m, tui.KeyLeft)
+	pressRune(t, m, ' ')
 	render(m, 160, 40)
 	if len(m.rulesItems) != 3 || m.rulesItems[1].set != "beta" {
 		t.Fatal("collapsing a set must hide only its child rules")
 	}
-	press(t, m, tui.KeyRight)
+	pressRune(t, m, ' ')
 	render(m, 160, 40)
 	if len(m.rulesItems) != 4 {
 		t.Fatal("expanding a set must restore its rules")

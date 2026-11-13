@@ -46,13 +46,13 @@ func (m *Main) findingTableRow(values []string, selected, heading bool) *tui.Ele
 		color := theme.Foreground
 		if heading {
 			color = theme.Muted
+		} else if selected {
+			color = theme.SelectionText
 		} else if i == 0 {
 			color = theme.Modified
 			if value == "error" {
 				color = theme.Danger
 			}
-		} else if selected {
-			color = theme.Accent
 		}
 		style := tui.NewStyle().Foreground(color).Background(background)
 		if heading {

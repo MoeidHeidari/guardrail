@@ -42,7 +42,7 @@ func TestOverviewPreviewNavigationAndLayout(t *testing.T) {
 	}
 	spans := m.overviewList.Children()[0].RichText()
 	if len(spans) != 3 || spans[1].Text != "[quality]" ||
-		!spans[1].Style.Bg.Equal(m.theme.Selection) || !spans[1].Style.Fg.Equal(m.theme.Accent) {
+		!spans[1].Style.Bg.Equal(m.theme.Selection) || !spans[1].Style.Fg.Equal(m.theme.SelectionText) {
 		t.Fatal("affected-file rule sets must render as accent tags")
 	}
 	m.changesFocus = true

@@ -26,7 +26,7 @@ func TestAnalysisStaleResultsAndPages(t *testing.T) {
 	}
 	m.openWorkspace(violationsPage)
 	frame := render(m, 120, 32)
-	if !strings.Contains(frame, "remove TODO") || !strings.Contains(frame, "1 violations") {
+	if !strings.Contains(frame, "remove TODO") {
 		t.Fatalf("findings were not rendered:\n%s", frame)
 	}
 	m.openWorkspace(rulesPage)

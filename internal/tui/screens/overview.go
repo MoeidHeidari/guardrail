@@ -37,35 +37,55 @@ func (m *Main) metricPanels() *tui.Element {
 	theme := m.theme
 	theme.Surface = theme.Background
 	row := components.NewContainer(theme, tui.WithDirection(tui.Row), tui.WithGap(1),
-		tui.WithHeight(4), tui.WithFlexShrink(0))
+		tui.WithHeight(6), tui.WithFlexShrink(0))
 	violations, failures, affected := 0, 0, make(map[string]bool)
+	flagged := make(map[ruleKey]bool)
 	for _, finding := range m.findings {
 		affected[finding.Path] = true
+		flagged[ruleKey{set: finding.Set, id: finding.Rule}] = true
 		if finding.Kind == "error" {
 			failures++
 		} else {
 			violations++
 		}
 	}
+	flaggedRules := 0
+	for _, rule := range m.analysisResult.Rules {
+		if flagged[ruleKey{set: rule.Set, id: rule.ID}] || flagged[ruleKey{id: rule.ID}] {
+			flaggedRules++
+		}
+	}
+	width := max(1, (m.renderWidth-48)/4-4)
 	for _, metric := range []struct {
-		name  string
-		count int
+		name                 string
+		count, filled, total int
+		detail               string
+		color                tui.Color
 	}{
-		{"Violations", violations}, {"Errors", failures}, {"Affected files", len(affected)},
-		{"Rules", len(m.analysisResult.Rules)},
+		{"Violations", violations, violations, len(m.findings), "of all findings", m.theme.Modified},
+		{"Errors", failures, failures, len(m.findings), "of all findings", m.theme.Danger},
+		{"Affected files", len(affected), len(affected), m.analysisResult.Report.Checked, "of checked files", m.theme.Modified},
+		{"Rules", len(m.analysisResult.Rules), flaggedRules, len(m.analysisResult.Rules), "with findings", m.theme.Accent},
 	} {
-		value := fmt.Sprint(metric.count)
-		if m.analysisGeneration == 0 {
-			value = "--"
+		value := fmt.Sprintf("%d", metric.count)
+		detail := fmt.Sprintf("%d/%d %s", metric.filled, metric.total, metric.detail)
+		if m.analysisGeneration == 0 || m.analysisResult.Error != "" {
+			value, detail = "--", "Awaiting analysis"
+			if m.analysisResult.Error != "" {
+				detail = "Analysis unavailable"
+			}
+		} else if m.analysisPending {
+			detail = "Updating..."
 		}
-		card := m.overviewCard(metric.name, 4, m.label(value))
-		color := m.theme.Accent
-		if metric.name == "Violations" && metric.count > 0 {
-			color = m.theme.Modified
-		} else if metric.name == "Errors" && metric.count > 0 {
-			color = m.theme.Danger
+		number := m.label(value)
+		number.Apply(tui.WithTextStyle(tui.NewStyle().Foreground(metric.color).Bold()))
+		bar := m.metricBar(metric.filled, metric.total, width, metric.color)
+		if value == "--" {
+			bar = m.metricBar(0, 0, width, metric.color)
 		}
-		card.Children()[1].Apply(tui.WithTextStyle(tui.NewStyle().Foreground(color).Bold()))
+		caption := m.label(detail)
+		caption.Apply(tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Muted)))
+		card := m.overviewCard(metric.name, 6, number, bar, caption)
 		card.Apply(tui.WithWidth(0), tui.WithFlexGrow(1), tui.WithMinWidth(0))
 		row.AddChild(card)
 	}

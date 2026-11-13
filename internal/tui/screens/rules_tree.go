@@ -1,6 +1,7 @@
 package screens
 
-func (m *Main) expandRuleTree(expand bool) {
+// toggleRuleSet collapses or expands the set of the selected tree row.
+func (m *Main) toggleRuleSet() {
 	if len(m.rulesItems) == 0 {
 		return
 	}
@@ -8,16 +9,11 @@ func (m *Main) expandRuleTree(expand bool) {
 		m.collapsedRuleSets = make(map[string]bool)
 	}
 	key := m.rulesItems[m.rulesSelection]
-	if key.id != "" {
-		if !expand {
-			for i := m.rulesSelection - 1; i >= 0; i-- {
-				if m.rulesItems[i].set == key.set && m.rulesItems[i].id == "" {
-					m.rulesSelection = i
-					break
-				}
-			}
+	for i := m.rulesSelection; i >= 0 && key.id != ""; i-- {
+		if m.rulesItems[i].set == key.set && m.rulesItems[i].id == "" {
+			m.rulesSelection = i
+			break
 		}
-	} else {
-		m.collapsedRuleSets[key.set] = !expand
 	}
+	m.collapsedRuleSets[key.set] = !m.collapsedRuleSets[key.set]
 }

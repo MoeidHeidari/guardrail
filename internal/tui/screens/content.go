@@ -11,14 +11,17 @@ func (m *Main) loadPreview() {
 	entry, exists := m.previewEntry()
 	if !exists {
 		m.preview = filePreview{message: "Select a file in the context tree."}
+		if m.contentTab && m.contentActive != "" {
+			m.preview = filePreview{path: m.contentActive,
+				message: "File no longer available: " + display(m.contentActive) + ". Select a file in the context tree."}
+		}
 		return
 	}
 	if entry.Path == m.preview.path && !m.previewDirty {
 		return
 	}
 	if entry.Path != m.preview.path {
-		m.contentOffset = 0
-		m.contentX = 0
+		m.contentX, m.contentOffset = m.tabView(entry.Path)
 	}
 	m.previewDirty = false
 	previous := m.preview

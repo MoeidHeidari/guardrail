@@ -14,21 +14,14 @@ const (
 )
 
 var workspaceLabels = [...]string{"Overview", "Violations", "Rules"}
-var workspaceShortcuts = [...]string{"o", "v", "u"}
 
-func (m *Main) styleSidebarRow(item *tui.Element, selected bool, background tui.Color) {
-	color := m.theme.Surface
-	if selected {
-		color = m.theme.Accent
-	} else {
-		background = m.theme.Surface
-	}
+func (m *Main) styleSidebarRow(item *tui.Element) {
 	item.Apply(tui.WithHeight(1), tui.WithPaddingTRBL(0, 1, 0, 1),
-		tui.WithBorderTRBL(tui.BorderNone, tui.BorderNone, tui.BorderNone, tui.BorderSingle),
-		tui.WithBorderStyle(tui.Style{Fg: color, Bg: background}))
+		tui.WithBorder(tui.BorderNone))
 }
 
 func (m *Main) openWorkspace(page workspacePage) {
+	m.saveTabView()
 	m.watchFocus = false
 	m.workspacePage, m.navigationIndex = page, int(page)
 	m.dashboardTab, m.contentTab = true, false
@@ -36,6 +29,7 @@ func (m *Main) openWorkspace(page workspacePage) {
 }
 
 func (m *Main) openNavigation(index int) {
+	m.animationOnly = false
 	if index == len(workspaceLabels) {
 		m.watchFocus, m.navigationFocus, m.changesFocus = true, false, false
 		m.navigationIndex = index
@@ -44,7 +38,53 @@ func (m *Main) openNavigation(index int) {
 	m.openWorkspace(workspacePage(index))
 }
 
+var workspaceShortcuts = [...]string{"o", "v", "u"}
+
+func (m *Main) focusContext() {
+	m.animationOnly = false
+	m.navigationFocus, m.changesFocus, m.watchFocus, m.rulesFocus = false, false, false, 0
+}
+
+func (m *Main) openWorkspaceFocused(page workspacePage) {
+	m.openWorkspace(page)
+	m.returnToTree = false
+	m.focusMain()
+}
+
+func (m *Main) focusMain() {
+	m.changesFocus, m.navigationFocus, m.watchFocus = true, false, false
+	m.rulesFocus = 0
+}
+
+// focusSidebar returns to the sidebar pane that opened the current page or file.
+func (m *Main) focusSidebar() {
+	if !m.changesFocus && !m.watchFocus {
+		return
+	}
+	m.changesFocus, m.watchFocus, m.rulesFocus = false, false, 0
+	m.navigationFocus = !m.returnToTree
+	if m.navigationFocus {
+		m.navigationIndex = int(m.workspacePage)
+	}
+}
+
+// activate opens the selected sidebar item and moves focus into it.
+func (m *Main) activate() {
+	fromMenu := m.navigationFocus
+	fromTree := !m.navigationFocus && !m.changesFocus && !m.watchFocus
+	m.toggle()
+	switch {
+	case fromMenu && m.navigationIndex < len(workspaceLabels):
+		m.returnToTree = false
+		m.focusMain()
+	case fromTree && len(m.rows) > 0 && !m.rows[m.selected].entry.IsDir():
+		m.returnToTree = true
+		m.focusMain()
+	}
+}
+
 func (m *Main) cycleFocus() {
+	m.animationOnly = false
 	lastRulesPane := 1
 	if m.rulesPreviewOpened {
 		lastRulesPane = 2
@@ -55,7 +95,7 @@ func (m *Main) cycleFocus() {
 	}
 	m.rulesFocus = 0
 	if m.watchFocus {
-		m.watchFocus = false
+		m.watchFocus, m.navigationFocus, m.changesFocus = false, true, false
 		m.navigationIndex = int(m.workspacePage)
 		return
 	}
@@ -63,10 +103,9 @@ func (m *Main) cycleFocus() {
 	case m.navigationFocus:
 		m.navigationFocus, m.changesFocus = false, false
 	case m.changesFocus:
-		m.navigationFocus, m.changesFocus = true, false
-		m.navigationIndex = int(m.workspacePage)
+		m.openNavigation(len(workspaceLabels))
 	default:
-		m.changesFocus = true
+		m.focusMain()
 	}
 }
 
@@ -74,6 +113,7 @@ func (m *Main) renderSidebar() *tui.Element {
 	m.navigationItems = nil
 	heading := m.label("Workspace")
 	heading.Apply(tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Muted).Bold()))
+	m.highlightFocus(heading, m.navigationFocus)
 	menu := components.NewSection(m.theme, "", heading)
 	menu.Apply(tui.WithHeight(4), tui.WithFlexShrink(1))
 	for i, name := range workspaceLabels {
@@ -83,24 +123,28 @@ func (m *Main) renderSidebar() *tui.Element {
 			item.Apply(tui.WithBackground(tui.Style{Bg: m.theme.Selection}),
 				tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Accent)))
 		}
-		m.styleSidebarRow(item, (m.dashboardVisible() && m.workspacePage == workspacePage(i)) ||
-			(m.navigationFocus && m.navigationIndex == i), m.theme.Selection)
+		m.styleSidebarRow(item)
 		if m.navigationFocus && m.navigationIndex == i {
 			item.Apply(tui.WithBackground(tui.Style{Bg: m.theme.Selection}),
 				tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Accent).Bold()))
 		}
+		m.highlightFocus(item, m.navigationFocus && m.navigationIndex == i)
+		if m.dashboardVisible() && m.workspacePage == workspacePage(i) {
+			item.Apply(tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.SelectionText).Background(m.theme.Selection)))
+		}
 		m.navigationItems = append(m.navigationItems, item)
 		menu.AddChild(item)
 	}
-	treeHeading := m.label("Context")
+	treeHeading := m.label("Context  [c]")
 	color := m.theme.Muted
-	if !m.changesFocus && !m.navigationFocus {
+	if !m.changesFocus && !m.navigationFocus && !m.watchFocus {
 		color = m.theme.Accent
 	}
 	treeHeading.Apply(tui.WithTextStyle(tui.NewStyle().Foreground(color).Bold()))
+	m.highlightFocus(treeHeading, !m.changesFocus && !m.navigationFocus && !m.watchFocus)
 	context := components.NewSection(m.theme, "", treeHeading, m.tree)
 	context.Apply(tui.WithHeight(0), tui.WithFlexGrow(1))
-	m.watchTabButton = m.label("1 Watch")
+	m.watchTabButton = m.label("Watch  [w]")
 	if m.watchFocus {
 		m.watchTabButton.Apply(tui.WithBackground(tui.Style{Bg: m.theme.Selection}),
 			tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Accent)))
@@ -109,8 +153,8 @@ func (m *Main) renderSidebar() *tui.Element {
 		m.watchTabButton.Apply(tui.WithBackground(tui.Style{Bg: m.theme.Selection}),
 			tui.WithTextStyle(tui.NewStyle().Foreground(m.theme.Accent).Bold()))
 	}
-	m.styleSidebarRow(m.watchTabButton, m.watchFocus ||
-		(m.navigationFocus && m.navigationIndex == len(workspaceLabels)), m.theme.Selection)
+	m.styleSidebarRow(m.watchTabButton)
+	m.highlightFocus(m.watchTabButton, m.watchFocus)
 	m.watchPane = components.NewContainer(m.theme, tui.WithHeight(0), tui.WithFlexGrow(1),
 		tui.WithScrollable(tui.ScrollBoth), tui.WithScrollOffset(m.watchX, m.changeOffset))
 	m.styleScrollbar(m.watchPane)

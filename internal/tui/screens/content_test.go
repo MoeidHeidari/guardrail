@@ -145,6 +145,7 @@ func fileScreen(t *testing.T, code string) *Main {
 	m.selected = 1
 	m.navigationFocus = false
 	m.contentOpened = true
+	m.contentTabs, m.contentActive = []string{"main.go"}, "main.go"
 	return m
 }
 
@@ -175,7 +176,7 @@ func TestContentTabsAndLiveReload(t *testing.T) {
 	if !strings.Contains(frame, "var after = 2") || strings.Contains(frame, "var before") {
 		t.Fatalf("selected preview was not refreshed:\n%s", frame)
 	}
-	pressRune(t, m, '1')
+	pressRune(t, m, 'w')
 	frame = render(m, 120, 24)
 	if !m.contentTab || !m.watchFocus || !strings.Contains(frame, "M main.go") {
 		t.Fatal("1 must focus sidebar Watch without replacing Content")
@@ -207,7 +208,7 @@ func TestContentTabsAndLiveReload(t *testing.T) {
 
 func TestContentNavigationAndReadErrors(t *testing.T) {
 	m := fileScreen(t, strings.Repeat("// "+strings.Repeat("long", 50)+"\n", 60))
-	pressRune(t, m, '2')
+	pressRune(t, m, '1')
 	render(m, 120, 24)
 	press(t, m, tui.KeyTab)
 	press(t, m, tui.KeyPageDown)
@@ -222,11 +223,11 @@ func TestContentNavigationAndReadErrors(t *testing.T) {
 	if m.contentOffset != 0 {
 		t.Fatal("home must scroll to first line")
 	}
-	press(t, m, tui.KeyRight)
+	pressRune(t, m, ']')
 	if m.contentX != 4 {
-		t.Fatal("right in Content must scroll horizontally")
+		t.Fatal("] in Content must scroll horizontally")
 	}
-	press(t, m, tui.KeyLeft)
+	pressRune(t, m, '[')
 	if m.contentX != 0 {
 		t.Fatal("left in Content must scroll horizontally")
 	}
@@ -246,14 +247,14 @@ func TestContentNavigationAndReadErrors(t *testing.T) {
 
 func TestContentLongLinesAndSelection(t *testing.T) {
 	m := fileScreen(t, "// "+strings.Repeat("x", 200)+"TAIL\n")
-	pressRune(t, m, '2')
+	pressRune(t, m, '1')
 	frame := render(m, 120, 24)
 	if strings.Contains(frame, "TAIL") {
 		t.Fatal("long source line should initially be clipped to the viewport")
 	}
 	press(t, m, tui.KeyTab)
 	for range 100 {
-		press(t, m, tui.KeyRight)
+		pressRune(t, m, ']')
 	}
 	frame = render(m, 120, 24)
 	if !strings.Contains(frame, "TAIL") {
@@ -263,10 +264,7 @@ func TestContentLongLinesAndSelection(t *testing.T) {
 	press(t, m, tui.KeyTab)
 	press(t, m, tui.KeyHome)
 	frame = render(m, 120, 24)
-	if !strings.Contains(frame, "Select a file") {
-		t.Fatal("selecting a directory must replace the file preview")
-	}
-	if m.contentX != 0 || m.contentOffset != 0 {
-		t.Fatal("selection changes must reset preview scrolling")
+	if strings.Contains(frame, "Select a file") {
+		t.Fatal("tree selection must not replace the open file tab")
 	}
 }

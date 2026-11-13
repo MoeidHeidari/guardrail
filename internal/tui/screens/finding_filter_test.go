@@ -53,7 +53,7 @@ func TestFindingTableHorizontalScroll(t *testing.T) {
 	}
 	m.changesFocus = true
 	for range 200 {
-		press(t, m, tui.KeyRight)
+		pressRune(t, m, ']')
 	}
 	render(m, 160, 40)
 	x, _ := m.feed.ScrollOffset()
@@ -64,7 +64,7 @@ func TestFindingTableHorizontalScroll(t *testing.T) {
 		t.Fatal("table must retain finding rows")
 	}
 	for range 200 {
-		press(t, m, tui.KeyLeft)
+		pressRune(t, m, '[')
 	}
 	if m.findingX != 0 {
 		t.Fatal("Left must return to beginning")
