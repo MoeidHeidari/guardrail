@@ -6,6 +6,8 @@ Guardrail is an open-source CLI being built to check code changes against a
 repository's engineering standards. Instructions tell coding agents what to do;
 Guardrail's goal is to verify the result and explain violations as they happen.
 
+![Guardrail terminal workspace](docs/assets/guardrail-screenshot.png)
+
 **Current status:** recursive watching, Tree-sitter parsing, YAML-defined regex and
 JavaScript rules, live findings, and `guardrail check` are implemented.
 Agent/editor integrations and dependency-aware rules remain planned.
