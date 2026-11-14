@@ -21,7 +21,7 @@ func communityPackEngine(t *testing.T, packs ...string) *Engine {
 	if err != nil {
 		t.Fatal(err)
 	}
-	engine, err := New(root, cfg)
+	engine, err := New(root, functionalTestConfig(cfg))
 	if err != nil {
 		t.Fatal(err)
 	}

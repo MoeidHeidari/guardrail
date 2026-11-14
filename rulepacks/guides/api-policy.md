@@ -43,5 +43,5 @@ undocumented declarations in every supported language. Unavailable or malformed
 syntax fails explicitly.
 
 Maintained by Guardrail contributors under [Apache License 2.0](../../LICENSE).
-Requires syntax API version 1 from this repository. Review contributed scripts;
+Requires change API version 1 with raw AST access from this repository. Review contributed scripts;
 runtime limits do not provide a secure sandbox.

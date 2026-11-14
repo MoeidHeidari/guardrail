@@ -41,7 +41,7 @@ func TestLiveAnalysisUpdatesDeletionAndReload(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(root, ".guard"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	write(".guardrail/rule.js", `(path, content) => content.includes("bad")`)
+	write(".guardrail/rule.js", `(path, change) => change.content.includes("bad")`)
 	write(".guard/rules.yml", "version: 1\nrules:\n  - id: js\n    type: javascript\n    file: .guardrail/rule.js\n")
 	write("a.js", "const bad = 1;")
 	files, err := watcher.New(root)

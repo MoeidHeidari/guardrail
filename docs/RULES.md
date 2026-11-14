@@ -95,25 +95,23 @@ error rather than silently truncating the report.
 
 ## JavaScript rules
 
-Functions receive `(path, content, syntax)`: a context-relative path, saved
-UTF-8 file contents, and the read-only syntax API below. Text-only functions
-can ignore `syntax`.
+Functions receive exactly `(path, change)`: a context-relative path and the
+read-only change object below. This replaces the earlier content/syntax arguments;
+migrate text access to `change.content` and raw syntax access to `change.ast`.
+Despite its name, `change` is a complete saved-file snapshot, not an edit diff.
+It is also supplied by one-shot `check`, without requiring a change event.
 
 A referenced file must contain one function expression, without module exports:
 
 ```javascript
-(path, content) => {
-  const lines = content.split(/\r?\n/);
-  const count = lines.length - (content.endsWith("\n") ? 1 : 0);
-  return count > 300;
-}
+(path, change) => change.lineCount > 300
 ```
 
 `true` means one file-level violation; `false` means no violation. File-level
 findings use line/column `0`. A function may instead return an array:
 
 ```javascript
-(path, content) => [
+(path, change) => [
   { line: 1, column: 1, message: "Explain the violation here." }
 ]
 ```
@@ -133,14 +131,12 @@ rules:
   - id: example
     type: javascript
     code: |
-      (path, content) => content.includes("FIXME")
+      (path, change) => change.content.includes("FIXME")
 ```
 
-See the [complete inline example](../examples/.guard/inline/quality.yml).
-The [example catalog](../examples/README.md) includes individual rule-set YAML
-files and JavaScript functions, with copy destinations and explanations of
-scopes, boolean results, and located findings.
-Example YAML lives outside `.guard/` so it is not activated. Every YAML inside
+See the [community catalog](../rulepacks/README.md) for actual functions,
+language-scoped YAML, installation instructions, and regression fixtures.
+Library YAML lives outside `.guard/` so it is not activated. Every YAML inside
 `.guard/` is active. The former root `.guardrail.yml` is not loaded.
 Referenced scripts must remain inside `.guard/` or
 `.guardrail/`; absolute paths, traversal, symlink files, and symlink rule
@@ -156,7 +152,85 @@ on timeout/cancellation; call-stack depth is limited.
 sandbox. Scripts can consume memory and runtime-native work is not guaranteed
 to be interruptible. Host API restrictions do not make untrusted code safe.
 
+### Change API
+
+`change.version` is `1`. `content` holds saved source text; `language` identifies
+the grammar. `lines` is a lazily built, frozen array without LF/CRLF terminators;
+`lineCount` is its length. Empty content has zero lines, a final newline does not
+create an extra line, and blank lines count. Bare CR is not a line separator.
+
+`functions()`, `imports()`, `comments()`, and `calls()` expose cached, frozen
+collections for Go, JavaScript/JSX, TypeScript/TSX, Python, and Rust. Call
+`change.require("functions", "calls")` to require capabilities explicitly.
+`capabilities` lists supported names. Unsupported helpers/capabilities and
+malformed syntax throw errors, not empty passing results.
+
+Every model has `kind` (the raw grammar kind), `text`, `rawNode`, `location`, and
+`finding(message)`. Locations contain frozen `start` and exclusive `end` objects:
+`{ line, column, offset }`. Lines/columns are 1-based source positions, not screen
+coordinates. Columns count Unicode code points; offsets are 0-based UTF-16 for
+`change.content.slice`. Tabs count as one source character.
+`change.location(rawNode)` creates the same location for an advanced AST node.
+`change.finding(message, position)` creates a located finding, and a model's
+`finding(message)` uses its start automatically. Final validation checks that
+findings stay within the file. Use boolean `true` for an unlocated file finding.
+
+| Helper | Additional fields |
+| --- | --- |
+| `functions()` | `name`, `nameNode`, `body`, `parameters`, `metrics`, `isPublic`, `documentation` |
+| `imports()` | `source`, `sourceNode`, `form`, `alias`, `names`, `isDynamic` |
+| `comments()` | `isDocumentation`, `isDirective` |
+| `calls()` | `target` (with `spelling`), `arguments`, `isMacro`, `isDebugger` |
+
+Function metrics expose `lineCount`, `parameterCount`, and `nestingDepth`.
+The line span includes comments/blank lines; nesting excludes nested functions'
+bodies. Parameters include Python/Rust receivers; grouped Go names count
+individually, and destructuring counts as one. Go method receivers are outside
+the parameter list. These are syntactic budgets, not cyclomatic complexity.
+Declaration-only signatures have `body: null`.
+
+Public/documentation classification follows the
+[public-function policy](../rulepacks/guides/api-policy.md): uppercase Go names,
+directly exported JS/TS functions, top-level non-underscore Python functions,
+and unrestricted Rust `pub fn`. It does not determine full semantic visibility.
+`documentation` is a comment/docstring model or `null` when absent.
+
+Imports retain source spelling, not resolved module paths. Rust grouped imports
+retain their group text; they are not expanded into a dependency graph. `names`
+contains named JS/TS import specifiers (`{ name, alias }`); other forms/languages
+use `null` for that classification. Namespace/default names remain in raw syntax.
+Nonliteral JS `import()`/`require()` calls have `source: null` and
+`isDynamic: true`. Alias support is limited to direct grammar fields.
+
+Calls expose target spelling, not resolved symbol identity. Macro arguments
+have `arguments: null` when there is no ordinary grammar argument field.
+Comments expose boolean `isDocumentation` and `isDirective` flags. Documentation
+recognition covers adjacent Go exported-declaration comments, package documentation,
+cgo preambles, JSDoc, and Rust documentation markers. Python docstrings are strings,
+exposed through function documentation, not `comments()`.
+Directive recognition covers Go compiler/build/line/export and nolint comments;
+JavaScript/TypeScript typing, JSX, linting, formatting, coverage, and purity markers;
+and Python shebang, encoding, typing, linting, coverage, and formatting markers.
+Rust currently has no recognized comment directives. These are syntactic heuristics,
+not validation of documentation or tool configuration; unrecognized comments have
+both flags set to `false`.
+
+```javascript
+(path, change) => change.comments()
+  .filter(comment => !comment.isDocumentation && !comment.isDirective)
+  .map(comment => comment.finding("Remove ordinary comments."))
+```
+
+```javascript
+(path, change) => change.functions()
+  .filter(fn => fn.body && fn.metrics.parameterCount > 5)
+  .map(fn => fn.finding("Reduce the number of parameters."))
+```
+
 ### Syntax API
+
+Advanced users retain the raw API as `change.ast`. In this section, `syntax`
+means `change.ast`.
 
 `syntax.version` is `1`. `language` identifies the grammar (`Go`, `JavaScript`,
 `TypeScript`, `TSX`, `Python`, `Rust`, or `text`); `parsed` indicates parsing was
@@ -181,7 +255,8 @@ Each node has:
 Helpers return node objects belonging to this snapshot:
 
 ```javascript
-(path, content, syntax) => {
+(path, change) => {
+  const syntax = change.ast;
   syntax.requireAST();
   return syntax.find("call_expression").filter(node => {
     const target = syntax.field(node, "function");

@@ -64,7 +64,6 @@ func TestLiveCursorFollowsAndHighlights(t *testing.T) {
 	if !found {
 		t.Fatal("changed position must have a contrasting cursor block")
 	}
-	// A later metadata-only update must not pull the view back to the edit.
 	m.contentOffset = 0
 	m.previewDirty = true
 	render(m, 120, 24)

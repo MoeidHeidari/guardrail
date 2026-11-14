@@ -1,4 +1,5 @@
-(path, content) => {
+(path, change) => {
+  const content = change.content;
   if (!/(^|\/)package\.json$/.test(path)) return [];
   const manifest = JSON.parse(content);
   if (!manifest || Array.isArray(manifest) || typeof manifest !== "object") {

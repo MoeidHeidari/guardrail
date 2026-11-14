@@ -56,7 +56,7 @@ func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, c
 		}
 	}()
 	defer func() { close(done); <-stopped }()
-	factory, err := runtime.RunString("(" + syntaxAPI + ")")
+	factory, err := runtime.RunProgram(syntaxProgram)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +69,18 @@ func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, c
 	if err != nil {
 		return nil, err
 	}
+	changeFactory, err := runtime.RunProgram(changeProgram)
+	if err != nil {
+		return nil, err
+	}
+	buildChange, ok := goja.AssertFunction(changeFactory)
+	if !ok {
+		return nil, errors.New("cannot initialize change API")
+	}
+	change, err := buildChange(goja.Undefined(), runtime.ToValue(content), api)
+	if err != nil {
+		return nil, err
+	}
 	value, err := runtime.RunProgram(rule.program)
 	if err != nil {
 		return nil, err
@@ -77,7 +89,7 @@ func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, c
 	if !ok {
 		return nil, errors.New("JavaScript rule must evaluate to a function")
 	}
-	value, err = function(goja.Undefined(), runtime.ToValue(path), runtime.ToValue(content), api)
+	value, err = function(goja.Undefined(), runtime.ToValue(path), change)
 	if err != nil {
 		return nil, err
 	}

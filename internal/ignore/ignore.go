@@ -64,7 +64,6 @@ func (matcher *Matcher) Matches(path string, directory bool) bool {
 		return false
 	}
 	parts := strings.Split(path, "/")
-	// Git does not re-include files whose parent directory is excluded.
 	for i := 1; i < len(parts); i++ {
 		if matcher.matcher.Match(parts[:i], true) {
 			return true

@@ -56,7 +56,6 @@ func (m *Main) focusMain() {
 	m.rulesFocus = 0
 }
 
-// focusSidebar returns to the sidebar pane that opened the current page or file.
 func (m *Main) focusSidebar() {
 	if !m.changesFocus && !m.watchFocus {
 		return
@@ -68,7 +67,6 @@ func (m *Main) focusSidebar() {
 	}
 }
 
-// activate opens the selected sidebar item and moves focus into it.
 func (m *Main) activate() {
 	fromMenu := m.navigationFocus
 	fromTree := !m.navigationFocus && !m.changesFocus && !m.watchFocus

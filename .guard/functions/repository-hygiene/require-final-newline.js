@@ -1,4 +1,5 @@
-(path, content) => {
+(path, change) => {
+  const content = change.content;
   if (content.length === 0 || content.endsWith("\n")) {
     return [];
   }

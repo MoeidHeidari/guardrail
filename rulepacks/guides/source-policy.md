@@ -43,5 +43,5 @@ and harmless strings in all supported languages. Invalid/unavailable syntax
 fails explicitly.
 
 Maintained by Guardrail contributors under [Apache License 2.0](../../LICENSE).
-Requires syntax API version 1 from this repository. Review code before execution;
+Requires change API version 1 with raw AST access from this repository. Review code before execution;
 runtime host restrictions do not constitute a secure sandbox.

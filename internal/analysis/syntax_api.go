@@ -30,7 +30,6 @@ type syntaxSnapshot struct {
 }
 
 func captureSyntax(ctx context.Context, root *ts.Node, content []byte) ([]syntaxNode, error) {
-	// Tree-sitter offsets are UTF-8 bytes; JavaScript slices use UTF-16 units.
 	offsets := make([]int, len(content)+1)
 	columns := make([]int, len(content)+1)
 	columns[0] = 1

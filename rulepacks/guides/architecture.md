@@ -41,5 +41,5 @@ pack through Guardrail and cover import locations for all supported grammars.
 Missing or invalid syntax produces explicit errors, not a passing result.
 
 Maintained by Guardrail contributors under [Apache License 2.0](../../LICENSE).
-Requires syntax API version 1 from the repository containing this pack.
+Requires change API version 1 with raw AST access from the repository containing this pack.
 Review functions before executing them; JavaScript is not a secure sandbox.

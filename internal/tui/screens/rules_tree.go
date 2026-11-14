@@ -1,6 +1,5 @@
 package screens
 
-// toggleRuleSet collapses or expands the set of the selected tree row.
 func (m *Main) toggleRuleSet() {
 	if len(m.rulesItems) == 0 {
 		return

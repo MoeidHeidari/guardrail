@@ -38,8 +38,6 @@ func TestSubtreeReconciliationDoesNotInspectUnrelatedPaths(t *testing.T) {
 		}
 	})
 	original := w.index["untouched"]
-	// Deliberately omit the unrelated write from this batch. If reconciliation
-	// scans the whole context it would incorrectly include it in this delta.
 	write(t, filepath.Join(root, "untouched"), "unrelated change")
 	if err := os.Mkdir(filepath.Join(root, "new"), 0o700); err != nil {
 		t.Fatal(err)

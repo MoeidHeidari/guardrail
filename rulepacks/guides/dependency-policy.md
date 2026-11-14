@@ -39,5 +39,5 @@ Run `go test ./internal/analysis -run '^Test(Engineering|Dependency)'`.
 npm aliases, approved entries, and invalid manifest structures.
 
 Maintained by Guardrail contributors under [Apache License 2.0](../../LICENSE).
-Compatible with the version 1 YAML and located JS findings API. Review scripts
+Compatible with version 1 YAML and change API v1. Review scripts
 before execution; restricted host APIs are not a secure sandbox.

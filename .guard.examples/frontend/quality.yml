@@ -18,4 +18,4 @@ rules:
     description: Demonstrates a file-level boolean finding when TODO appears in saved text.
     message: Resolve or track the TODO before sharing this file.
     code: |
-      (path, content) => content.includes("TODO")
+      (path, change) => change.content.includes("TODO")

@@ -24,7 +24,6 @@ func (m *Main) tabView(path string) (int, int) {
 	return view[0], view[1]
 }
 
-// openTab adds the file to the content tabs when missing and makes it active.
 func (m *Main) openTab(path string) {
 	switching := !m.contentTab || path != m.contentActive
 	if switching {
@@ -55,7 +54,6 @@ func (m *Main) activateTabAt(index int) {
 	}
 }
 
-// cycleTab moves through the workspace tab (position 0) and the content tabs.
 func (m *Main) cycleTab(delta int) {
 	if len(m.contentTabs) == 0 {
 		return
@@ -67,7 +65,6 @@ func (m *Main) cycleTab(delta int) {
 	m.jumpTab((position + delta + len(m.contentTabs) + 1) % (len(m.contentTabs) + 1))
 }
 
-// jumpTab activates the workspace tab for 0 and content tab n for 1..9+.
 func (m *Main) jumpTab(n int) {
 	switch {
 	case n == 0:
@@ -125,7 +122,6 @@ func (m *Main) tabLabel(index int) string {
 	return display(name)
 }
 
-// visibleTabs keeps the active tab inside the width left for tabs.
 func (m *Main) visibleTabs(budget int) (int, int) {
 	count := len(m.contentTabs)
 	active := slices.Index(m.contentTabs, m.contentActive)

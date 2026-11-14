@@ -127,7 +127,6 @@ func TestPreviewWorkerCoalescesAndRejectsStaleResults(t *testing.T) {
 	if !m.ApplyPreview(waitPreview(t, results)) || m.preview.cursor == nil {
 		t.Fatal("async updates must preserve live cursor tracking")
 	}
-	// Results for a file no longer selected must not overwrite the directory page.
 	m.selected = 0
 	if m.ApplyPreview(latest) {
 		t.Fatal("selection changes must reject previous file results")

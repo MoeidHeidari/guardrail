@@ -61,8 +61,9 @@ belong to the terminal event loop.
 
 The shared engine consumes `(context, relative path, content)` independently of
 terminal rendering. File discovery/read helpers feed it in both `check` and live
-mode. The JavaScript interface is `(path, content, syntax)`, with a frozen, bounded
-named-node syntax snapshot and no host filesystem/network APIs. A fresh runtime
+mode. The JavaScript interface is `(path, change)`, with saved content, cached
+language-adapted helpers, and a frozen, bounded named-node snapshot under
+`change.ast`, with no host filesystem/network APIs. A fresh runtime
 per file/rule avoids shared mutable state. The snapshot is captured once per
 file evaluation before Tree-sitter trees/parsers are closed.
 

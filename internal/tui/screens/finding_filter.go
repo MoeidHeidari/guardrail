@@ -86,7 +86,6 @@ func (m *Main) renderFindingFilters() *tui.Element {
 	return row
 }
 
-// stepFilter selects the neighbouring filter; it reports false at the edges.
 func (m *Main) stepFilter(delta int) bool {
 	if !m.changesFocus || m.overviewPreviewFocus || (!m.findingsVisible() && !m.overviewVisible()) {
 		return false

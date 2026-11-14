@@ -4,8 +4,7 @@
 
 The standalone `max-file-lines` JavaScript function enforces a team-selected
 file-length policy. Maintained by Guardrail contributors under
-[Apache License 2.0](../../LICENSE). Requires the version 1 YAML schema and
-located JavaScript findings API; tested against repository source containing
+[Apache License 2.0](../../LICENSE). Requires version 1 YAML and change API v1; tested against repository source containing
 this pack.
 
 ## Install

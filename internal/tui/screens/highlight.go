@@ -54,7 +54,6 @@ func locateChange(before, after string) *changeCursor {
 	position := start
 	if end > start {
 		position = end - 1
-		// A line-ending write belongs to the line just written, not the next blank row.
 		if current[position] != '\n' {
 			position++
 		}
@@ -135,7 +134,6 @@ func highlight(path, code string) (lines [][]tui.TextSpan, language string, err 
 }
 
 func highlightWithStyle(path, code, syntax string) (lines [][]tui.TextSpan, language string, err error) {
-	// Chroma iterators can panic on lexer errors; show these as preview errors.
 	defer func() {
 		if failure := recover(); failure != nil {
 			lines = nil

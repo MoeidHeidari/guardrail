@@ -18,8 +18,6 @@ func Run(ctx context.Context, contextPath string) (err error) {
 	if err != nil {
 		return err
 	}
-	// Reserve terminal input and interrupt descriptors before kqueue opens
-	// watched files; go-tui's select-based reader requires low descriptors.
 	terminal, err := tui.NewApp()
 	if err != nil {
 		return fmt.Errorf("create terminal workspace: %w", err)
