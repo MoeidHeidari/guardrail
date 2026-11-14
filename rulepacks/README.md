@@ -90,13 +90,17 @@ Add the pack to the catalog below when contributing it.
 
 Use the existing [rule API](../docs/RULES.md#javascript-rules), not a new module API:
 
-- A function receives `(path, content, syntax)` for one saved UTF-8 file.
+- A function receives `(path, change)` for one complete saved-file snapshot,
+  including during `check`; this is not a diff.
 - Referenced JavaScript is a function expression, without imports or exports.
 - Return `false` or `[]` for no findings, `true` for a file-level violation, or
   an array of `{ line, column, message }` findings.
 - Located findings use 1-based lines and Unicode-code-point columns.
-- `syntax` exposes a frozen named-node AST and helpers; call `requireAST()` for
-  syntax-dependent checks. See the [syntax API](../docs/RULES.md#syntax-api).
+- `change.content`, `lines`, and `lineCount` support text checks.
+- `change.functions()`, `imports()`, `comments()`, and `calls()` provide common
+  models, source locations, and `finding(message)`. See the [change API](../docs/RULES.md#change-api).
+- Advanced rules use `change.ast`; call its `requireAST()` before raw syntax
+  checks. See the [syntax API](../docs/RULES.md#syntax-api).
 - There are no filesystem/network APIs, type information, or cross-file access.
 - Exceptions, invalid return values, and timeouts are execution errors.
 
@@ -188,3 +192,14 @@ Run `go test ./internal/analysis -run '^TestCommunityRulePacks$'`.
 Engineering packs use [syntax-based regression tests](../internal/analysis/engineering_packs_test.go).
 Run `go test ./internal/analysis -run '^Test(Engineering|Dependency)'`.
 Contribute additional packs with a README link, summary, and tested version or commit.
+
+### Helper and raw-AST examples
+
+[Debug-output policy](functions/source-policy/no-debug-output.js) uses
+`change.calls()` without grammar-specific field traversal. Its
+[raw-AST counterpart](functions/source-policy/no-debug-output-ast.js) demonstrates
+the same policy through `change.ast`. The default YAML selects the helper version;
+replace its `file` reference with the AST counterpart to experiment, rather than
+enabling both and producing duplicate findings. Regression tests check parity.
+The architecture and comment policies also demonstrate combining helpers with
+raw nodes for language-specific cases.

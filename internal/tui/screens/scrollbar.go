@@ -179,7 +179,6 @@ func (m *Main) setScroll(el *tui.Element, offset int) {
 	} else {
 		m.changeOffset = offset
 	}
-	// Render replaces elements, so continue dragging against the current pane.
 	if m.dragPane != nil {
 		m.dragPane = el
 	}

@@ -56,7 +56,7 @@ func TestProjectExampleRules(t *testing.T) {
 }
 
 func TestFileLengthThreshold(t *testing.T) {
-	engine := testEngine(t, config.Rule{ID: "length", Type: "javascript", Code: `(path, content) => {
+	engine := testEngine(t, config.Rule{ID: "length", Type: "javascript", Code: `(path, change) => { const content = change.content;
 		const count = content.split("\n").length - (content.endsWith("\n") ? 1 : 0);
 		return count > 300 ? [{line: 301, column: 1, message: "too long"}] : false;
 	}`})

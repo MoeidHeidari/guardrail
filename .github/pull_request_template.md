@@ -49,6 +49,7 @@ Follow the [rule-pack contribution guide](https://github.com/MoeidHeidari/guardr
 - **Supported languages, file patterns, and exclusions:**
 - **YAML rule-set paths and shared function path:**
 - **Required Guardrail/syntax API version:**
+- **Implementation style:** `change` helpers, `change.ast`, or a combination.
 - **Default thresholds, exceptions, and customization:**
 - **Known limitations and false positives:**
 

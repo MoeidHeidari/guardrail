@@ -1,7 +1,6 @@
-(path, content) => {
+(path, change) => {
   const limit = 300;
-  const lines = content.split(/\r?\n/);
-  const count = lines.length - (content.endsWith("\n") ? 1 : 0);
+  const count = change.lineCount;
   if (count <= limit) return [];
   return [{
     line: limit + 1,

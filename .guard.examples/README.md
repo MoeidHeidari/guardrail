@@ -2,15 +2,15 @@
 
 These are individual YAML rule examples and JavaScript functions, not a starter project.
 They mirror a project's `.guard/` layout. Copy selected sets and scripts from
-`examples/.guard/` into your project's `.guard/`, preserving their paths.
+`.guard.examples/` into your project's `.guard/`, preserving their paths.
 
 | Example | Demonstrates | Copy to your project |
 | --- | --- | --- |
-| [general/quality.yml](.guard/general/quality.yml) | Regex conflict-marker rule | `.guard/general/quality.yml` (general set) |
-| [frontend/quality.yml](.guard/frontend/quality.yml) | Scoped regex and inline boolean JavaScript rules | `.guard/frontend/quality.yml` (frontend set) |
-| [maintainability/size.yml](.guard/maintainability/size.yml) | Referenced JavaScript rule | `.guard/maintainability/size.yml` (maintainability set) |
-| [source-lines.js](.guard/scripts/source-lines.js) | Structured findings with line, column, message | `.guard/scripts/source-lines.js` |
-| [inline/quality.yml](.guard/inline/quality.yml) | Single YAML combining regex and inline JavaScript | `.guard/inline/quality.yml` (inline set) |
+| [general/quality.yml](general/quality.yml) | Regex conflict-marker rule | `.guard/general/quality.yml` (general set) |
+| [frontend/quality.yml](frontend/quality.yml) | Scoped regex and inline boolean JavaScript rules | `.guard/frontend/quality.yml` (frontend set) |
+| [maintainability/size.yml](maintainability/size.yml) | Referenced JavaScript rule | `.guard/maintainability/size.yml` (maintainability set) |
+| [source-lines.js](scripts/source-lines.js) | Structured findings with line, column, message | `.guard/scripts/source-lines.js` |
+| [inline/quality.yml](inline/quality.yml) | Single YAML combining regex and inline JavaScript | `.guard/inline/quality.yml` (inline set) |
 
 Copy only the examples you want and adjust their scopes and thresholds.
 The maintainability YAML needs the referenced function at the exact destination
@@ -26,7 +26,9 @@ Use `description` to explain the validation and `message` for the finding.
 
 ## JavaScript functions
 
-Functions receive `(path, content)` with a context-relative path and saved text.
+Functions receive `(path, change)` with a context-relative path and the saved-file
+snapshot. Use `change.content` for text, `change.lineCount` for length,
+the high-level helpers for common syntax, or `change.ast` for raw AST access.
 Inline functions use `code: |`; external functions use `file:` and contain one
 function expression without module exports or imports.
 

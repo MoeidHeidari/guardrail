@@ -1,4 +1,5 @@
-(path, content) => {
+(path, change) => {
+  const content = change.content;
   const findings = [];
   const lines = content.split(/\r?\n/);
   for (let index = 0; index < lines.length; index++) {

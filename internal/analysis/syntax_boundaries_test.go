@@ -26,7 +26,7 @@ func TestSyntaxSnapshotEmptyAndUnicodeBoundaries(t *testing.T) {
 
 func TestTextRulesDoNotDecodeSyntaxNodes(t *testing.T) {
 	engine := testEngine(t, config.Rule{ID: "text", Type: "javascript",
-		Code: `(path, content, syntax) => {
+		Code: `(path, change) => { const content = change.content, syntax = change.ast;
 			if (syntax.language !== "text" || syntax.parsed) throw Error("wrong metadata");
 			return false;
 		}`})
@@ -35,7 +35,7 @@ func TestTextRulesDoNotDecodeSyntaxNodes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("text-only rules must not decode unused syntax: %v", err)
 	}
-	engine = testEngine(t, config.Rule{ID: "ast", Type: "javascript", Code: `(path, content, syntax) => syntax.nodes`})
+	engine = testEngine(t, config.Rule{ID: "ast", Type: "javascript", Code: `(path, change) => change.ast.nodes`})
 	_, err = engine.javascript(context.Background(), engine.rules[0], "a.js", "",
 		syntaxSnapshot{Language: "JavaScript", Parsed: true}, []byte("not JSON"))
 	if err == nil {

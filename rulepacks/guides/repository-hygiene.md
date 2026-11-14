@@ -4,7 +4,7 @@
 
 Three standalone JavaScript functions for saved text files. Maintained by
 Guardrail contributors under [Apache License 2.0](../../LICENSE).
-Requires the version 1 YAML schema and located JavaScript findings API;
+Requires version 1 YAML and change API v1;
 tested against the repository source containing this pack.
 
 | Rule | Behavior |

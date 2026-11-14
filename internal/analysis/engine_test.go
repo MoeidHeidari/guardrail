@@ -38,7 +38,7 @@ func TestJavaScriptContract(t *testing.T) {
 		want int
 		kind string
 	}{
-		{`(path, content) => path === "a.txt" && content.includes("bad")`, 1, "violation"},
+		{`(path, change) => path === "a.txt" && change.content.includes("bad")`, 1, "violation"},
 		{`() => false`, 0, ""},
 		{`() => []`, 0, ""},
 		{`() => [{line: 2, column: 2, message: "bad"}]`, 1, "violation"},
@@ -80,7 +80,7 @@ func TestScriptsAndContainment(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(root, ".guardrail"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, ".guardrail/rule.js"), []byte(`(path, content) => true`), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".guardrail/rule.js"), []byte(`(path, change) => true`), 0600); err != nil {
 		t.Fatal(err)
 	}
 	cfg := config.Config{TimeoutMS: 30, Include: []string{"**"}, Rules: []config.Rule{{ID: "js", Type: "javascript", File: ".guardrail/rule.js"}}}

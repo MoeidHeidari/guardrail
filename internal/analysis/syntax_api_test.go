@@ -9,7 +9,7 @@ import (
 )
 
 func TestSyntaxAPILocationsAndReadOnlyNodes(t *testing.T) {
-	engine := testEngine(t, config.Rule{ID: "ast", Type: "javascript", Code: `(path, content, syntax) => {
+	engine := testEngine(t, config.Rule{ID: "ast", Type: "javascript", Code: `(path, change) => { const content = change.content, syntax = change.ast;
 		syntax.requireAST();
 		if (syntax.version !== 1 || syntax.language !== "JavaScript") throw Error("wrong API");
 		const call = syntax.find("call_expression")[0];
@@ -29,7 +29,7 @@ func TestSyntaxAPILocationsAndReadOnlyNodes(t *testing.T) {
 
 func TestSyntaxAPIErrors(t *testing.T) {
 	engine := testEngine(t, config.Rule{ID: "ast", Type: "javascript",
-		Code: `(path, content, syntax) => { syntax.requireAST(); return []; }`})
+		Code: `(path, change) => { const content = change.content, syntax = change.ast; syntax.requireAST(); return []; }`})
 	for _, test := range []struct{ path, content string }{{"a.txt", "plain"}, {"a.go", "func {"}} {
 		result := engine.Evaluate(context.Background(), test.path, []byte(test.content))
 		last := result.Findings[len(result.Findings)-1]
@@ -38,7 +38,7 @@ func TestSyntaxAPIErrors(t *testing.T) {
 		}
 	}
 	engine = testEngine(t, config.Rule{ID: "ast", Type: "javascript",
-		Code: `(path, content, syntax) => syntax.text({start:0,end:1})`})
+		Code: `(path, change) => change.ast.text({start:0,end:1})`})
 	result := engine.Evaluate(context.Background(), "a.js", []byte("const x = 1;"))
 	if len(result.Findings) != 1 || result.Findings[0].Kind != "error" {
 		t.Fatalf("foreign nodes must be rejected: %+v", result.Findings)
@@ -62,11 +62,11 @@ func TestSyntaxCaptureLimitAndCancellation(t *testing.T) {
 func TestSyntaxSnapshotIsolationAndRuleScope(t *testing.T) {
 	engine, err := New(t.TempDir(), config.Config{Include: []string{"**"}, TimeoutMS: 100,
 		Rules: []config.Rule{
-			{ID: "mutate", Type: "javascript", Code: `(path, content, syntax) => {
+			{ID: "mutate", Type: "javascript", Code: `(path, change) => { const content = change.content, syntax = change.ast;
 				syntax.nodes[0].type = "modified"; syntax.nodes = [];
 				return [];
 			}`},
-			{ID: "verify", Type: "javascript", Code: `(path, content, syntax) => {
+			{ID: "verify", Type: "javascript", Code: `(path, change) => { const content = change.content, syntax = change.ast;
 				if (syntax.nodes[0].type !== "program") throw Error("shared mutation");
 				return [];
 			}`},

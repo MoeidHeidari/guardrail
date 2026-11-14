@@ -36,7 +36,6 @@ func (m *Main) StartPreviewWorker(parent context.Context) (<-chan PreviewResult,
 			case <-ctx.Done():
 				return
 			case request := <-m.previewRequests:
-				// Briefly coalesce rapid saves before starting expensive lexing.
 				timer := time.NewTimer(40 * time.Millisecond)
 				select {
 				case <-ctx.Done():

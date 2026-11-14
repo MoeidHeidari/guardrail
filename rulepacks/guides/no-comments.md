@@ -8,8 +8,10 @@ folders. Copy the chosen YAML to `.guard/<language>/no-comments.yml` and
 `.guard/functions/source-policy/no-comments.js`. The Go rule is also installed
 in this repository.
 
-The AST-backed function reports ordinary line/block comments at their start
-locations. Strings containing comment-like text are not flagged.
+The helper-based function uses `change.comments()` and reports comments whose
+`isDocumentation` and `isDirective` flags are both false at their start locations.
+Language-specific classification lives in the adapter, not the rule; raw AST
+access is unnecessary. Strings containing comment-like text are not flagged.
 Exceptions are intentionally explicit:
 
 - Go: adjacent documentation groups for uppercase-named declarations, package
@@ -31,5 +33,5 @@ to satisfy a rule.
 
 Run `go test ./internal/analysis -run '^TestCommunityCommentPolicy$'`.
 Synthetic fixtures cover every language, harmless strings, and exceptions.
-Requires syntax API v1; maintained by Guardrail contributors under
+Requires change API v1; maintained by Guardrail contributors under
 [Apache License 2.0](../../LICENSE). Review functions before execution.

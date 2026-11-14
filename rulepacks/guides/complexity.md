@@ -42,5 +42,5 @@ supported grammars and threshold boundaries. Unsupported or invalid syntax
 fails explicitly.
 
 Maintained by Guardrail contributors under [Apache License 2.0](../../LICENSE).
-Requires syntax API version 1 from this repository. Review functions before
+Requires change API version 1 with raw AST access from this repository. Review functions before
 executing them; JavaScript is not a secure process/memory sandbox.
