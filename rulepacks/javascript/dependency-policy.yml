@@ -1,0 +1,7 @@
+version: 1
+include: ["**/package.json"]
+rules:
+  - id: no-unapproved-dependencies
+    type: javascript
+    description: Reject explicitly unapproved npm dependencies, including aliases.
+    file: .guard/functions/dependency-policy/no-unapproved-dependencies.js

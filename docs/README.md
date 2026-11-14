@@ -16,6 +16,8 @@ JavaScript rules, and noninteractive checking. Agent/editor integrations remain 
 ## For contributors
 
 - [Contributing](CONTRIBUTING.md): contribution workflow and review expectations.
+- [Community rule packs](../rulepacks/README.md): reusable standards, contribution layout,
+  fixtures, local adoption, and trust boundaries.
 - [Development](DEVELOPMENT.md): commands, testing, coding conventions, and TUI work.
 - [Architecture and roadmap](ARCHITECTURE.md): current design and future analysis pipeline.
 

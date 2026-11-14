@@ -1,0 +1,7 @@
+version: 1
+include: ["**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
+rules:
+  - id: no-comments
+    type: javascript
+    description: Reject ordinary comments while preserving JSDoc and recognized tool directives.
+    file: .guard/functions/source-policy/no-comments.js

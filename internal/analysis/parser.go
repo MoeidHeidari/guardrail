@@ -29,8 +29,13 @@ func (err *SyntaxError) Error() string {
 }
 
 func Parse(ctx context.Context, path string, content []byte) (Syntax, error) {
+	syntax, _, err := parseSource(ctx, path, content, false)
+	return syntax, err
+}
+
+func parseSource(ctx context.Context, path string, content []byte, capture bool) (Syntax, []syntaxNode, error) {
 	if err := ctx.Err(); err != nil {
-		return Syntax{}, err
+		return Syntax{}, nil, err
 	}
 	var language *ts.Language
 	syntax := Syntax{}
@@ -49,12 +54,12 @@ func Parse(ctx context.Context, path string, content []byte) (Syntax, error) {
 		syntax.Language, language = "Rust", ts.NewLanguage(rust.Language())
 	default:
 		syntax.Language = "text"
-		return syntax, nil
+		return syntax, nil, nil
 	}
 	parser := ts.NewParser()
 	defer parser.Close()
 	if err := parser.SetLanguage(language); err != nil {
-		return syntax, err
+		return syntax, nil, err
 	}
 	tree := parser.ParseWithOptions(func(offset int, _ ts.Point) []byte {
 		if offset >= len(content) {
@@ -64,9 +69,9 @@ func Parse(ctx context.Context, path string, content []byte) (Syntax, error) {
 	}, nil, &ts.ParseOptions{ProgressCallback: func(ts.ParseState) bool { return ctx.Err() != nil }})
 	if tree == nil {
 		if err := ctx.Err(); err != nil {
-			return syntax, err
+			return syntax, nil, err
 		}
-		return syntax, fmt.Errorf("%s parser did not produce a syntax tree", syntax.Language)
+		return syntax, nil, fmt.Errorf("%s parser did not produce a syntax tree", syntax.Language)
 	}
 	defer tree.Close()
 	syntax.Parsed = true
@@ -87,7 +92,11 @@ func Parse(ctx context.Context, path string, content []byte) (Syntax, error) {
 			node = next
 		}
 		line, column := position(content, int(node.StartByte()))
-		return syntax, &SyntaxError{Language: syntax.Language, Line: line, Column: column}
+		return syntax, nil, &SyntaxError{Language: syntax.Language, Line: line, Column: column}
 	}
-	return syntax, nil
+	if capture {
+		nodes, err := captureSyntax(ctx, tree.RootNode(), content)
+		return syntax, nodes, err
+	}
+	return syntax, nil, nil
 }

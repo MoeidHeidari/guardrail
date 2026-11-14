@@ -1,0 +1,7 @@
+version: 1
+include: ["**/*.rs"]
+rules:
+  - id: document-public-functions
+    type: javascript
+    description: Require documentation for explicit public function declarations.
+    file: .guard/functions/api-policy/document-public-functions.js

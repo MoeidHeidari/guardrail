@@ -18,7 +18,7 @@ type jsFinding struct {
 	Message string `json:"message"`
 }
 
-func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, content string) ([]Finding, error) {
+func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, content string, snapshot syntaxSnapshot, syntaxJSON []byte) ([]Finding, error) {
 	runtime := goja.New()
 	runtime.SetMaxCallStackSize(256)
 	validator, err := runtime.RunString(`(() => {
@@ -56,6 +56,19 @@ func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, c
 		}
 	}()
 	defer func() { close(done); <-stopped }()
+	factory, err := runtime.RunString("(" + syntaxAPI + ")")
+	if err != nil {
+		return nil, err
+	}
+	buildAPI, ok := goja.AssertFunction(factory)
+	if !ok {
+		return nil, errors.New("cannot initialize syntax API")
+	}
+	api, err := buildAPI(goja.Undefined(), runtime.ToValue(string(syntaxJSON)), runtime.ToValue(content),
+		runtime.ToValue(snapshot.Language), runtime.ToValue(snapshot.Parsed), runtime.ToValue(snapshot.Error))
+	if err != nil {
+		return nil, err
+	}
 	value, err := runtime.RunProgram(rule.program)
 	if err != nil {
 		return nil, err
@@ -64,7 +77,7 @@ func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, c
 	if !ok {
 		return nil, errors.New("JavaScript rule must evaluate to a function")
 	}
-	value, err = function(goja.Undefined(), runtime.ToValue(path), runtime.ToValue(content))
+	value, err = function(goja.Undefined(), runtime.ToValue(path), runtime.ToValue(content), api)
 	if err != nil {
 		return nil, err
 	}

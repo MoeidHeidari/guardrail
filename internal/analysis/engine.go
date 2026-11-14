@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -23,6 +24,13 @@ type compiledRule struct {
 	spec    config.Rule
 	regex   *regexp.Regexp
 	program *goja.Program
+}
+
+func (rule compiledRule) applies(path string) bool {
+	if rule.spec.Source != "" && (!config.Matches(rule.spec.ScopeInclude, path) || config.Matches(rule.spec.ScopeExclude, path)) {
+		return false
+	}
+	return rule.spec.Include == nil || config.Matches(rule.spec.Include, path)
 }
 
 type Engine struct {
@@ -136,21 +144,33 @@ func (engine *Engine) Evaluate(ctx context.Context, path string, content []byte)
 	}
 	var err error
 	parseCtx, cancel := context.WithTimeout(ctx, time.Duration(engine.Config.TimeoutMS)*time.Millisecond)
-	result.Syntax, err = Parse(parseCtx, path, content)
+	capture := false
+	for _, rule := range engine.rules {
+		capture = capture || (rule.program != nil && rule.applies(path))
+	}
+	var nodes []syntaxNode
+	result.Syntax, nodes, err = parseSource(parseCtx, path, content, capture)
 	cancel()
+	snapshot := syntaxSnapshot{Language: result.Syntax.Language, Parsed: result.Syntax.Parsed, Nodes: nodes}
 	if err != nil {
+		snapshot.Error = err.Error()
 		result.Findings = append(result.Findings, ErrorFinding(path, "parser", err))
 	}
+	var syntaxJSON []byte
+	if capture {
+		syntaxJSON, err = json.Marshal(snapshot)
+		if err != nil {
+			result.Findings = append(result.Findings, ErrorFinding(path, "parser", fmt.Errorf("encode syntax tree: %w", err)))
+			return result
+		}
+	}
 	for _, rule := range engine.rules {
-		if rule.spec.Source != "" && (!config.Matches(rule.spec.ScopeInclude, path) || config.Matches(rule.spec.ScopeExclude, path)) {
+		if !rule.applies(path) {
 			continue
 		}
 		if ctx.Err() != nil {
 			result.Findings = append(result.Findings, ErrorFinding(path, rule.spec.ID, ctx.Err()))
 			break
-		}
-		if rule.spec.Include != nil && !config.Matches(rule.spec.Include, path) {
-			continue
 		}
 		var findings []Finding
 		if rule.regex != nil {
@@ -166,7 +186,7 @@ func (engine *Engine) Evaluate(ctx context.Context, path string, content []byte)
 				}
 			}
 		} else {
-			findings, err = engine.javascript(ctx, rule, path, string(content))
+			findings, err = engine.javascript(ctx, rule, path, string(content), snapshot, syntaxJSON)
 		}
 		if err != nil {
 			findings = []Finding{ErrorFinding(path, rule.spec.ID, err)}

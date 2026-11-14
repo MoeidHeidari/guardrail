@@ -1,0 +1,7 @@
+version: 1
+include: ["**/*.go"]
+rules:
+  - id: no-comments
+    type: javascript
+    description: Reject ordinary comments while preserving public documentation and compiler/tool directives.
+    file: .guard/functions/source-policy/no-comments.js

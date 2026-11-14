@@ -34,6 +34,8 @@ Policies are repository-defined, not built in.
 - Run regex and restricted JavaScript functions from YAML rule sets under `.guard/`, inline or
   referenced from `.guard/` or `.guardrail/`.
 - Parse Go, JavaScript, TypeScript, Python, and Rust and inspect live findings.
+- Write syntax-aware JavaScript rules using a read-only AST API, and adopt
+  [community engineering-standard packs](rulepacks/README.md).
 - Run `guardrail check --format json` for noninteractive checks.
 
 Watching uses filesystem notifications, not periodic full-directory polling.
@@ -73,9 +75,10 @@ It does not automatically select the Git root. Use either a positional path or
 
 See [Getting started](docs/GETTING_STARTED.md) for setup details and troubleshooting.
 See [Rules and checking](docs/RULES.md) for configuration, JavaScript contracts,
-analysis scope, and exit codes. This repository includes runnable
-[General rules](.guard/rules.yml), [maintainability rules](.guard/maintainability/source.yml),
-[Go rules](.guard/go/quality.yaml), and an [inline example](examples/rules/inline.yml).
+analysis scope, and exit codes. This repository adopts the community
+[Go rule sets](.guard/go/): architecture, source APIs, function complexity,
+comment policy, hygiene, and a customized 250-line file limit.
+Their implementations live in [shared functions](.guard/functions/).
 
 ## Using the workspace
 
@@ -113,6 +116,7 @@ See the [watch guide](docs/WATCH.md) for complete controls and behavior.
 | [Getting started](docs/GETTING_STARTED.md) | Build, launch, context selection, troubleshooting |
 | [Watch workspace](docs/WATCH.md) | Tabs, tree, content preview, markers, keyboard and mouse |
 | [Rules and checking](docs/RULES.md) | YAML, regex, JavaScript, parsing, live results, CLI checks |
+| [Community rule packs](rulepacks/README.md) | Contribute, validate, and adopt reusable engineering standards |
 | [Performance and limits](docs/PERFORMANCE.md) | Event processing, large contexts, benchmarks, resource limits |
 | [Architecture and roadmap](docs/ARCHITECTURE.md) | Implemented components and future integrations |
 | [Development](docs/DEVELOPMENT.md) | Local checks, tests, project structure, TUI composition |
@@ -128,6 +132,11 @@ are welcome. Read the [contribution guide](docs/CONTRIBUTING.md) before opening 
 Keep source and test files at or below 300 lines and include tests for behavior
 changes. Proposed features should clearly distinguish planned functionality
 from currently supported behavior.
+
+Contribute reusable engineering-standard functions and YAML rules to
+[the community rule-pack library](rulepacks/README.md). Packs must include
+documentation, synthetic fixtures, and validation evidence; adoption is local
+and opt-in.
 
 ## Community and support
 

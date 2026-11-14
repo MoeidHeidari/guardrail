@@ -1,0 +1,8 @@
+version: 1
+include:
+  - "**/*.txt"
+rules:
+  - id: max-file-lines
+    type: javascript
+    description: Limit file length to a team-selected maximum, initially 300 lines.
+    file: .guard/functions/maintainability/max-file-lines.js

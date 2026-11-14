@@ -1,0 +1,7 @@
+version: 1
+include: ["**/*.ts", "**/*.tsx"]
+rules:
+  - id: no-infrastructure-imports
+    type: javascript
+    description: Keep domain/core files independent of infrastructure-named imports.
+    file: .guard/functions/architecture/no-infrastructure-imports.js
