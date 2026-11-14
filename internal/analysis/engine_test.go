@@ -13,11 +13,19 @@ import (
 
 func testEngine(t *testing.T, rule config.Rule) *Engine {
 	t.Helper()
-	engine, err := New(t.TempDir(), config.Config{Include: []string{"**"}, TimeoutMS: 30, Rules: []config.Rule{rule}})
+	engine, err := New(t.TempDir(), config.Config{Include: []string{"**"}, TimeoutMS: 1000, Rules: []config.Rule{rule}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	return engine
+}
+
+func functionalTestConfig(cfg config.Config) config.Config {
+	cfg.TimeoutMS = 1000
+	for i := range cfg.Rules {
+		cfg.Rules[i].TimeoutMS = 1000
+	}
+	return cfg
 }
 
 func TestRegexLocations(t *testing.T) {
@@ -59,7 +67,11 @@ func TestJavaScriptContract(t *testing.T) {
 	}
 	for _, test := range cases {
 		t.Run(test.code, func(t *testing.T) {
-			engine := testEngine(t, config.Rule{ID: "js", Type: "javascript", Code: test.code})
+			rule := config.Rule{ID: "js", Type: "javascript", Code: test.code}
+			if strings.Contains(test.code, "while (true)") {
+				rule.TimeoutMS = 30
+			}
+			engine := testEngine(t, rule)
 			start := time.Now()
 			result := engine.Evaluate(context.Background(), "a.txt", []byte("bad\nok"))
 			if time.Since(start) > time.Second {
@@ -72,6 +84,21 @@ func TestJavaScriptContract(t *testing.T) {
 				t.Fatalf("unexpected finding kind: %+v", result.Findings)
 			}
 		})
+	}
+}
+
+func TestJavaScriptDeadline(t *testing.T) {
+	engine := testEngine(t, config.Rule{
+		ID: "deadline", Type: "javascript", TimeoutMS: 30, Code: `() => { while (true) {} }`,
+	})
+	start := time.Now()
+	result := engine.Evaluate(context.Background(), "a.txt", []byte("text"))
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("configured deadline was not enforced: %s", elapsed)
+	}
+	if len(result.Findings) != 1 || result.Findings[0].Kind != "error" ||
+		!strings.Contains(result.Findings[0].Message, "context deadline exceeded") {
+		t.Fatalf("expected explicit deadline error: %+v", result.Findings)
 	}
 }
 

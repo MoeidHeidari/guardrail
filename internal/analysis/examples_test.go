@@ -18,7 +18,7 @@ func TestProjectExampleRules(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	engine, err := New(root, cfg)
+	engine, err := New(root, functionalTestConfig(cfg))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestProjectFileLengthBoundary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	engine, err := New(root, cfg)
+	engine, err := New(root, functionalTestConfig(cfg))
 	if err != nil {
 		t.Fatal(err)
 	}
