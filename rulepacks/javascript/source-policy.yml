@@ -1,0 +1,7 @@
+version: 1
+include: ["**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"]
+rules:
+  - id: no-debug-output
+    type: javascript
+    description: Reject syntax-level calls to debug-output APIs and debugger statements.
+    file: .guard/functions/source-policy/no-debug-output.js

@@ -45,6 +45,21 @@ final review. Avoid mixing unrelated cleanup with a feature or bug fix.
 
 ## Code style
 
+### Community rules
+
+Reusable engineering standards belong in [rulepacks/](../rulepacks/README.md),
+not the active `.guard/` directory. Follow the pack contribution guide for
+layout, rule contracts, licensing, fixtures, and validation evidence. Add new
+packs to its catalog and document exact installation paths and limitations.
+Complete the **New community rule** section in the
+[PR template](../.github/pull_request_template.md), including passing/failing
+examples and exact expected findings for every claimed language.
+Use the documented syntax API for AST-backed rules; do not present type analysis,
+remote installation, or a dedicated pack-test runner
+as existing functionality.
+
+### Project code
+
 - Follow the repository's existing patterns and Go formatting.
 - Keep functions and components focused and maintainable.
 - Keep source and test files at or below 300 lines, including blank lines/imports.

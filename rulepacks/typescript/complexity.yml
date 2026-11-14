@@ -1,0 +1,7 @@
+version: 1
+include: ["**/*.ts", "**/*.tsx"]
+rules:
+  - id: function-budgets
+    type: javascript
+    description: Limit function line spans, parameter counts, and syntactic control-flow nesting.
+    file: .guard/functions/complexity/function-budgets.js

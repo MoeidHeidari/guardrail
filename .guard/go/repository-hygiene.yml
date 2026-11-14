@@ -1,0 +1,16 @@
+version: 1
+include:
+  - "**/*.go"
+rules:
+  - id: no-conflict-markers
+    type: javascript
+    description: Reject full-line merge-conflict markers, including diff3 ancestors.
+    file: .guard/functions/repository-hygiene/no-conflict-markers.js
+  - id: no-trailing-whitespace
+    type: javascript
+    description: Reject spaces and tabs at the end of a line.
+    file: .guard/functions/repository-hygiene/no-trailing-whitespace.js
+  - id: require-final-newline
+    type: javascript
+    description: Require a final LF or CRLF in nonempty files.
+    file: .guard/functions/repository-hygiene/require-final-newline.js

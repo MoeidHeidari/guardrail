@@ -7,6 +7,10 @@ the context's `.guard/` folder. No policy is built in.
 
 ## Rule sets
 
+For reusable, opt-in engineering standards and contribution guidance, see the
+[community rule-pack library](../rulepacks/README.md). Library files are not
+automatically loaded; review and copy selected rules into your context's `.guard/`.
+
 Each YAML file uses the schema below. Root-level YAML belongs to **General**;
 nested YAML uses its immediate containing folder's name as the rule-set name.
 For example:
@@ -27,11 +31,13 @@ not the YAML file. Symlink YAML files are rejected; symlink folders are not
 followed. Any invalid set is an explicit configuration error, not partially
 successful analysis.
 
-This project includes [General merge-conflict detection](../.guard/rules.yml),
-[maintainability/file-length rules](../.guard/maintainability/source.yml), and
-[Go debug-output rules](../.guard/go/quality.yaml). File length is controlled by
-the editable [JavaScript function](../.guard/rules/max-source-lines.js), not a
-built-in engine restriction.
+This project adopts the community [Go rule sets](../.guard/go/) for architecture,
+source APIs, complexity, comment policy, repository hygiene, and file
+length. All active sets select Go files, including tests. The installed
+[file-length function](../.guard/functions/maintainability/max-file-lines.js)
+uses a 250-line limit; the community default remains 300. These are opt-in
+policies, not built-in engine restrictions. The npm dependency policy is not
+enabled because this repository uses Go dependencies.
 
 ## Configuration
 
@@ -50,7 +56,7 @@ rules:
     type: javascript
     include:
       - "**/*.go"
-    file: .guard/rules/max-source-lines.js
+    file: .guard/functions/maintainability/max-file-lines.js
 ```
 
 Rule IDs must be nonempty and unique within their rule set. Unknown YAML fields, multiple documents,
@@ -89,8 +95,9 @@ error rather than silently truncating the report.
 
 ## JavaScript rules
 
-Functions receive exactly `(path, content)`: a context-relative path and the
-saved UTF-8 file contents. No parser/AST argument is supplied yet.
+Functions receive `(path, content, syntax)`: a context-relative path, saved
+UTF-8 file contents, and the read-only syntax API below. Text-only functions
+can ignore `syntax`.
 
 A referenced file must contain one function expression, without module exports:
 
@@ -148,6 +155,61 @@ on timeout/cancellation; call-stack depth is limited.
 **Run only trusted repository scripts.** This is not a process or memory
 sandbox. Scripts can consume memory and runtime-native work is not guaranteed
 to be interruptible. Host API restrictions do not make untrusted code safe.
+
+### Syntax API
+
+`syntax.version` is `1`. `language` identifies the grammar (`Go`, `JavaScript`,
+`TypeScript`, `TSX`, `Python`, `Rust`, or `text`); `parsed` indicates parsing was
+attempted successfully. `error` holds any parser/capture failure. Always call
+`syntax.requireAST()` before syntax-dependent checks: it throws when the grammar
+is unavailable or syntax/capture failed, so these conditions cannot appear as a
+successful rule check. Text rules may still run after parser failures.
+
+`syntax.nodes` is a frozen, preorder array of named Tree-sitter nodes. The
+nodes, their `children` arrays and `fields` maps, and the API object are frozen.
+Each node has:
+
+- `type`: the grammar's node kind, not a language-independent semantic category.
+- `start` / `end`: exclusive-end UTF-16 offsets for JavaScript `content.slice`.
+- `line` / `column`: 1-based start location; columns count Unicode code points.
+- `endLine`: 1-based line of the exclusive end position.
+- `parent`: parent node index, or `-1` at the root.
+- `children`: named child indices, in source order.
+- `fields`: grammar field names mapped to a child index. Repeated fields retain
+  their last child; use `children` when every repeated element matters.
+
+Helpers return node objects belonging to this snapshot:
+
+```javascript
+(path, content, syntax) => {
+  syntax.requireAST();
+  return syntax.find("call_expression").filter(node => {
+    const target = syntax.field(node, "function");
+    return target && syntax.text(target) === "fmt.Println";
+  }).map(node => ({
+    line: node.line,
+    column: node.column,
+    message: "Use the project's logging abstraction.",
+  }));
+}
+```
+
+`find(...types)` selects node kinds. `text(node)` returns its source text;
+`field(node, name)` and `parent(node)` return a node or `null`;
+`children(node)` returns a new array of named children. Foreign nodes are rejected.
+Node names/fields follow the bundled grammars; test each language explicitly.
+
+The tree is parsed once per file evaluation and captured only when JavaScript
+rules apply to that file. Capture is cancellation-aware and limited to 50,000 named
+nodes. Exceeding that limit is an explicit parser/capture error; no partial tree
+is exposed. Capture observes the analysis deadline, serialization happens once
+per evaluation, and JavaScript API initialization and execution observe each
+rule's deadline. Each runtime decodes and freezes nodes lazily on first node
+access; text-only rules do not pay that initialization cost.
+
+The API provides syntax only: no type checking, symbol/import resolution,
+cross-file access, dependency graph, networking, or filesystem access. See the
+[engineering packs](../rulepacks/README.md#catalog) for tested uses and limitations.
 
 ## Parsing
 

@@ -24,17 +24,28 @@ func TestProjectExampleRules(t *testing.T) {
 	}
 	foundLength := false
 	for _, rule := range cfg.Rules {
-		if rule.ID == "max-source-lines" {
-			foundLength = rule.Set == "maintainability" && rule.File == ".guard/rules/max-source-lines.js"
+		if rule.ID == "max-file-lines" {
+			foundLength = rule.Set == "go" && rule.File == ".guard/functions/maintainability/max-file-lines.js"
 		}
 	}
 	if !foundLength {
 		t.Fatal("maintainability set must reference the project length script")
 	}
+	if len(cfg.Rules) != 8 {
+		t.Fatalf("expected eight adopted Go rules, got %d", len(cfg.Rules))
+	}
+	for _, rule := range cfg.Rules {
+		if rule.Set != "go" || rule.Type != "javascript" {
+			t.Fatalf("unexpected legacy or non-Go project rule: %+v", rule)
+		}
+	}
+	if cfg.Applies("example.js") || cfg.Applies("package.json") {
+		t.Fatal("project rule scope must remain Go-only")
+	}
 	result := engine.Evaluate(context.Background(), "example.go", []byte("package main\n<<<<<<< ours\n=======\n>>>>>>> theirs\n"))
 	found := 0
 	for _, finding := range result.Findings {
-		if finding.Rule == "merge-conflict-markers" {
+		if finding.Rule == "no-conflict-markers" {
 			found++
 		}
 
@@ -73,7 +84,7 @@ func TestProjectFileLengthBoundary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, count := range []int{99, 100, 101, 109, 110} {
+	for _, count := range []int{249, 250, 251, 259, 260} {
 		for _, trailingNewline := range []bool{false, true} {
 			content := "package main\n" + strings.Repeat("// source\n", count-1)
 			if !trailingNewline {
@@ -85,16 +96,16 @@ func TestProjectFileLengthBoundary(t *testing.T) {
 				if finding.Kind == "error" {
 					t.Fatalf("%d lines produced an execution error: %+v", count, finding)
 				}
-				if finding.Rule == "max-source-lines" {
+				if finding.Rule == "max-file-lines" {
 					findings = append(findings, finding)
 				}
 			}
-			if count <= 100 {
+			if count <= 250 {
 				if len(findings) != 0 {
 					t.Fatalf("%d lines must pass: %+v", count, findings)
 				}
-			} else if len(findings) != 1 || findings[0].Line != 101 ||
-				findings[0].Column != 1 || !strings.Contains(findings[0].Message, "limit is 100") {
+			} else if len(findings) != 1 || findings[0].Line != 251 ||
+				findings[0].Column != 1 || !strings.Contains(findings[0].Message, "limit is 250") {
 				t.Fatalf("%d lines must have a valid, consistent finding: %+v", count, findings)
 			}
 		}

@@ -61,9 +61,10 @@ belong to the terminal event loop.
 
 The shared engine consumes `(context, relative path, content)` independently of
 terminal rendering. File discovery/read helpers feed it in both `check` and live
-mode. The JavaScript interface remains exactly `(path, content)`, with no host
-APIs or AST argument. A fresh runtime per file/rule avoids shared mutable state.
-Tree-sitter trees/parsers are closed after each evaluation.
+mode. The JavaScript interface is `(path, content, syntax)`, with a frozen, bounded
+named-node syntax snapshot and no host filesystem/network APIs. A fresh runtime
+per file/rule avoids shared mutable state. The snapshot is captured once per
+file evaluation before Tree-sitter trees/parsers are closed.
 
 Parsing errors, read errors, configuration failures and runtime failures remain
 distinct from policy violations. Unsupported grammars are explicitly text-only.
@@ -76,7 +77,7 @@ watch/preview resource behavior.
 
 ## Roadmap
 
-1. Syntax-aware custom-rule helpers and additional tested grammars.
+1. Additional tested grammars and richer syntax-aware community rules.
 2. Dependency graphs, cross-layer policies and affected-dependent analysis.
 3. Severity and richer diagnostic/report integrations.
 4. Agent/editor integrations, including unsaved document buffers where supported.

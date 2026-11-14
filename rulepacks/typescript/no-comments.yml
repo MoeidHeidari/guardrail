@@ -1,0 +1,7 @@
+version: 1
+include: ["**/*.ts", "**/*.tsx"]
+rules:
+  - id: no-comments
+    type: javascript
+    description: Reject ordinary comments while preserving JSDoc and recognized tool directives.
+    file: .guard/functions/source-policy/no-comments.js
