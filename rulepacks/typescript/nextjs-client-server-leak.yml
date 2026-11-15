@@ -1,0 +1,20 @@
+rules:
+  - id: nextjs-client-server-leak
+    type: javascript
+    include:
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.jsx"
+    description: "Prevents server-side modules from leaking into Next.js Client Components."
+    code: |
+      (path, change) => {
+        const isClientComponent = change.content.includes('"use client"') || change.content.includes("'use client'");
+        if (!isClientComponent) {
+          return [];
+        }
+        const forbiddenPackages = ["server-only", "pg", "prisma", "mongoose", "redis"];
+        return change.imports()
+          .filter(imp => forbiddenPackages.some(pkg => imp.text.includes(pkg)))
+          .map(imp => imp.finding("Architectural violation: Server-side module leaked into a 'use client' component."));
+      }
