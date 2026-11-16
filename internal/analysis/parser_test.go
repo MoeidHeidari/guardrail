@@ -10,6 +10,7 @@ func TestTreeSitterLanguages(t *testing.T) {
 		"a.go": "package main\nfunc main() {}", "a.js": "const a = 1;",
 		"a.ts": "const a: number = 1;", "a.tsx": "const a = <div/>;",
 		"a.py": "def f():\n    return 1\n", "a.rs": "fn main() {}",
+		"a.java": "class A { void run() {} }", "a.cs": "class A { void Run() {} }",
 	} {
 		t.Run(path, func(t *testing.T) {
 			syntax, err := Parse(context.Background(), path, []byte(content))

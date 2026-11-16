@@ -28,7 +28,8 @@ func TestLoadAndScope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.TimeoutMS != 100 || !cfg.Applies("main.go") || !cfg.Applies("src/main.ts") {
+	if cfg.TimeoutMS != 100 || !cfg.Applies("main.go") || !cfg.Applies("src/main.ts") ||
+		!cfg.Applies("src/Main.java") || !cfg.Applies("src/Main.cs") {
 		t.Fatalf("unexpected defaults: %+v", cfg)
 	}
 	for _, path := range []string{".git/config", FileName, ".guard/rules/check.js", ".guardrail/rule.js", "node_modules/a.js", "src/vendor/a.go", "target/a.rs", "image.png"} {

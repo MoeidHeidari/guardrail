@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 
 	ts "github.com/tree-sitter/go-tree-sitter"
+	csharp "github.com/tree-sitter/tree-sitter-c-sharp/bindings/go"
 	golang "github.com/tree-sitter/tree-sitter-go/bindings/go"
+	java "github.com/tree-sitter/tree-sitter-java/bindings/go"
 	javascript "github.com/tree-sitter/tree-sitter-javascript/bindings/go"
 	python "github.com/tree-sitter/tree-sitter-python/bindings/go"
 	rust "github.com/tree-sitter/tree-sitter-rust/bindings/go"
@@ -42,6 +44,10 @@ func parseSource(ctx context.Context, path string, content []byte, capture bool)
 	switch filepath.Ext(path) {
 	case ".go":
 		syntax.Language, language = "Go", ts.NewLanguage(golang.Language())
+	case ".java":
+		syntax.Language, language = "Java", ts.NewLanguage(java.Language())
+	case ".cs":
+		syntax.Language, language = "C#", ts.NewLanguage(csharp.Language())
 	case ".js", ".jsx", ".mjs", ".cjs":
 		syntax.Language, language = "JavaScript", ts.NewLanguage(javascript.Language())
 	case ".ts":

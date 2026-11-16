@@ -40,7 +40,7 @@ type Config struct {
 
 var DefaultInclude = []string{
 	"**/*.go", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs",
-	"**/*.ts", "**/*.tsx", "**/*.py", "**/*.rs",
+	"**/*.ts", "**/*.tsx", "**/*.py", "**/*.rs", "**/*.java", "**/*.cs",
 	"**/*.json", "**/*.yaml", "**/*.yml", "**/*.toml", "**/*.sh",
 	"**/*.css", "**/*.html", "**/Dockerfile", "**/Makefile",
 }

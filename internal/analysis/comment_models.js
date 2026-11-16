@@ -44,6 +44,10 @@
       isDirective = /^#(?:!|.*coding[:=]|\s*(?:type:|noqa\b|pragma:|pylint:|ruff:|fmt:))/.test(text);
     } else if (ast.language === "Rust") {
       isDocumentation = /^\/\/[!/]|^\/\*[*!]/.test(text);
+    } else if (ast.language === "Java") {
+      isDocumentation = text.startsWith("/**");
+    } else if (ast.language === "C#") {
+      isDocumentation = text.startsWith("///") || text.startsWith("/**");
     }
     return model(node, { isDocumentation, isDirective });
   });

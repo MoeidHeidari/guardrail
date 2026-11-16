@@ -33,7 +33,7 @@ Policies are repository-defined, not built in.
   below it and an on-demand Content tab in a light- or dark-themed terminal UI.
 - Run regex and restricted JavaScript functions from YAML rule sets under `.guard/`, inline or
   referenced from `.guard/` or `.guardrail/`.
-- Parse Go, JavaScript, TypeScript, Python, and Rust and inspect live findings.
+- Parse Go, JavaScript, TypeScript, Python, Rust, Java, and C# and inspect live findings.
 - Write JavaScript rules with `(path, change)`, common code-analysis helpers,
   and advanced read-only AST access, and adopt
   [community engineering-standard packs](rulepacks/README.md).

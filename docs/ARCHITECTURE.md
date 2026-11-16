@@ -18,7 +18,7 @@ flowchart LR
     Config[".guard YAML rule sets / scripts"] --> Engine["Shared engine"]
     Live --> Engine
     Check["check / text or JSON"] --> Engine
-    Engine --> Parser["Tree-sitter: Go / JS / TS / Python / Rust"]
+    Engine --> Parser["Tree-sitter: Go / JS / TS / Python / Rust / Java / C#"]
     Engine --> Rules["RE2 regex / embedded Goja"]
     Parser --> Report["File / rule / kind / location / message"]
     Rules --> Report

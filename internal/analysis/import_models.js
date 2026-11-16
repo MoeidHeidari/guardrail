@@ -18,7 +18,22 @@
       ...details,
     }));
   };
-  for (const node of ast.find("import_spec", "import_statement", "import_from_statement", "use_declaration", "export_statement")) {
+  for (const node of ast.find("import_spec", "import_statement", "import_from_statement", "use_declaration",
+    "export_statement", "import_declaration", "using_directive")) {
+    if (ast.language === "Java" && node.type === "import_declaration") {
+      const children = ast.children(node);
+      const source = children.find(child => ["identifier", "scoped_identifier"].includes(child.type));
+      const wildcard = children.some(child => child.type === "asterisk");
+      add(node, source, { isDynamic: false, form: node.type, alias: null,
+        source: source ? ast.text(source) + (wildcard ? ".*" : "") : null });
+      continue;
+    }
+    if (ast.language === "C#" && node.type === "using_directive") {
+      const alias = ast.field(node, "name");
+      const source = ast.children(node).find(child => child !== alias && !child.type.includes("comment"));
+      add(node, source, { isDynamic: false, form: node.type, alias: alias ? ast.text(alias) : null });
+      continue;
+    }
     const source = ast.field(node, "path") || ast.field(node, "source") ||
       ast.field(node, "module_name") || ast.field(node, "argument");
     if (node.type === "export_statement" && !source) continue;
