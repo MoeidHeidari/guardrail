@@ -72,8 +72,8 @@ Patterns match context-relative paths with `/` separators. `**` matches any
 number of directories, including zero; `*` matches within one directory.
 Rule-level `include` further restricts the global scope.
 
-When omitted, `include` selects Go, JavaScript, TypeScript, Python, Rust, JSON,
-YAML, TOML, shell, CSS, HTML, Dockerfiles, and Makefiles. Default `exclude` omits
+When omitted, `include` selects Go, JavaScript, TypeScript, Python, Rust, Java,
+C#, JSON, YAML, TOML, shell, CSS, HTML, Dockerfiles, and Makefiles. Default `exclude` omits
 Git internals, rule folders, `node_modules`, `vendor`, Python environments and
 caches, `dist`, `build`, `target`, and `bin` directories. Explicit include/exclude
 lists replace their corresponding defaults. The root `.git/`, `.guard/`,
@@ -160,7 +160,7 @@ the grammar. `lines` is a lazily built, frozen array without LF/CRLF terminators
 create an extra line, and blank lines count. Bare CR is not a line separator.
 
 `functions()`, `imports()`, `comments()`, and `calls()` expose cached, frozen
-collections for Go, JavaScript/JSX, TypeScript/TSX, Python, and Rust. Call
+collections for Go, JavaScript/JSX, TypeScript/TSX, Python, Rust, Java, and C#. Call
 `change.require("functions", "calls")` to require capabilities explicitly.
 `capabilities` lists supported names. Unsupported helpers/capabilities and
 malformed syntax throw errors, not empty passing results.
@@ -233,7 +233,7 @@ Advanced users retain the raw API as `change.ast`. In this section, `syntax`
 means `change.ast`.
 
 `syntax.version` is `1`. `language` identifies the grammar (`Go`, `JavaScript`,
-`TypeScript`, `TSX`, `Python`, `Rust`, or `text`); `parsed` indicates parsing was
+`TypeScript`, `TSX`, `Python`, `Rust`, `Java`, `C#`, or `text`); `parsed` indicates parsing was
 attempted successfully. `error` holds any parser/capture failure. Always call
 `syntax.requireAST()` before syntax-dependent checks: it throws when the grammar
 is unavailable or syntax/capture failed, so these conditions cannot appear as a
@@ -288,8 +288,8 @@ cross-file access, dependency graph, networking, or filesystem access. See the
 
 ## Parsing
 
-Tree-sitter parses Go, JavaScript/JSX, TypeScript/TSX, Python, and Rust before
-rule evaluation. Syntax errors/missing nodes appear as parser errors with a
+Tree-sitter parses Go, JavaScript/JSX, TypeScript/TSX, Python, Rust, Java, and C#
+before rule evaluation. Syntax errors/missing nodes appear as parser errors with a
 location; regex and JavaScript rules still run on the saved content.
 Other included extensions are explicitly text-only (`parsed: false` in JSON)
 and still support custom rules. Parsing is syntax analysis, not type checking,

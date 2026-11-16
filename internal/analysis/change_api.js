@@ -1,6 +1,6 @@
 (functionModels, importModels, commentModels) => (content, ast) => {
   const freeze = Object.freeze;
-  const supported = ["Go", "JavaScript", "TypeScript", "TSX", "Python", "Rust"];
+  const supported = ["Go", "JavaScript", "TypeScript", "TSX", "Python", "Rust", "Java", "C#"];
   const capabilities = freeze(supported.includes(ast.language) ?
     ["functions", "imports", "comments", "calls"] : []);
   let lines;
@@ -42,8 +42,10 @@
     });
   };
   const spelling = node => {
-    const object = ast.field(node, "object") || ast.field(node, "operand");
-    const member = ast.field(node, "property") || ast.field(node, "attribute") || ast.field(node, "field");
+    const object = ast.field(node, "object") || ast.field(node, "operand") ||
+      (node.type === "member_access_expression" && ast.field(node, "expression"));
+    const member = ast.field(node, "property") || ast.field(node, "attribute") || ast.field(node, "field") ||
+      (node.type === "member_access_expression" && ast.field(node, "name"));
     return object && member ? `${spelling(object)}.${ast.text(member)}` : ast.text(node).replace(/\s/g, "");
   };
   const cache = new Map();
@@ -60,12 +62,16 @@
     functions: () => collection("functions", () => functionModels(ast, content, model)),
     imports: () => collection("imports", () => importModels(ast, model)),
     comments: () => collection("comments", () => commentModels(ast, content, model)),
-    calls: () => collection("calls", () => ast.find("call_expression", "call", "macro_invocation", "debugger_statement")
+    calls: () => collection("calls", () => ast.find("call_expression", "call", "macro_invocation", "debugger_statement",
+      "method_invocation", "invocation_expression")
       .map(node => {
-        const target = ast.field(node, "function") || ast.field(node, "macro");
+        const target = ast.field(node, "function") || ast.field(node, "macro") ||
+          (node.type === "method_invocation" && ast.field(node, "name"));
         const argumentsNode = ast.field(node, "arguments");
+        const object = node.type === "method_invocation" && ast.field(node, "object");
+        const targetSpelling = target && (object ? `${spelling(object)}.${ast.text(target)}` : spelling(target));
         return model(node, {
-          target: target ? model(target, { spelling: spelling(target) }) : null,
+          target: target ? model(target, { spelling: targetSpelling }) : null,
           arguments: argumentsNode ? freeze(ast.children(argumentsNode).filter(child =>
             !child.type.includes("comment")).map(child => model(child))) : null,
           isMacro: node.type === "macro_invocation",

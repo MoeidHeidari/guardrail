@@ -1,7 +1,10 @@
 (ast, content, model) => {
   const types = ["function_declaration", "method_declaration", "function_definition",
     "function_item", "function_expression", "arrow_function", "method_definition",
-    "generator_function_declaration", "generator_function", "closure_expression", "func_literal", "lambda"];
+    "generator_function_declaration", "generator_function", "closure_expression", "func_literal", "lambda",
+    "constructor_declaration", "compact_constructor_declaration", "local_function_statement",
+    "lambda_expression", "anonymous_method_expression", "operator_declaration",
+    "conversion_operator_declaration", "destructor_declaration"];
   const controls = ["if_statement", "for_statement", "while_statement", "do_statement",
     "switch_statement", "select_statement", "try_statement", "with_statement",
     "if_expression", "for_expression", "while_expression", "loop_expression", "match_expression"];
@@ -12,11 +15,14 @@
   return ast.find(...types).map(node => {
     const nameNode = ast.field(node, "name");
     const name = nameNode ? ast.text(nameNode) : null;
-    const body = ast.field(node, "body");
+    const body = ast.field(node, "body") || (node.type === "anonymous_method_expression" ?
+      ast.children(node).find(child => child.type === "block") : null);
     const parametersNode = ast.field(node, "parameters");
     const singleParameter = ast.field(node, "parameter");
     const parameters = [];
-    for (const parameter of parametersNode ? ast.children(parametersNode) : singleParameter ? [singleParameter] : []) {
+    const parameterNodes = parametersNode ? (["identifier", "implicit_parameter"].includes(parametersNode.type) ?
+      [parametersNode] : ast.children(parametersNode)) : singleParameter ? [singleParameter] : [];
+    for (const parameter of parameterNodes) {
       if (parameter.type.includes("comment") || ["positional_separator", "keyword_separator"].includes(parameter.type)) continue;
       const names = ast.language === "Go" ? ast.children(parameter).filter(child =>
         child.type === "identifier" && child !== ast.field(parameter, "type")) : [];
@@ -46,6 +52,11 @@
       if (string) documentation = model(string);
     } else if (ast.language === "Rust") {
       isPublic = ast.children(node).some(child => child.type === "visibility_modifier" && ast.text(child) === "pub");
+    } else if (ast.language === "Java") {
+      const modifiers = ast.children(node).find(child => child.type === "modifiers");
+      isPublic = !!(modifiers && /\bpublic\b/.test(ast.text(modifiers)));
+    } else if (ast.language === "C#") {
+      isPublic = ast.children(node).some(child => child.type === "modifier" && ast.text(child) === "public");
     } else {
       isPublic = !!(parent && parent.type === "export_statement");
       if (isPublic) anchor = parent;
@@ -61,6 +72,8 @@
         const text = ast.text(previous);
         if ((ast.language === "Go" && name && new RegExp(`^(?://|/\\*)\\s*${name}(?:\\s|[.,:;!?]|$)`).test(text)) ||
             (ast.language === "Rust" && /^\/\/\/|^\/\*\*/.test(text)) ||
+            (ast.language === "Java" && text.startsWith("/**")) ||
+            (ast.language === "C#" && (text.startsWith("///") || text.startsWith("/**"))) ||
             (["JavaScript", "TypeScript", "TSX"].includes(ast.language) && text.startsWith("/**"))) {
           documentation = model(previous);
         }

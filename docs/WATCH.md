@@ -115,7 +115,7 @@ paths. Closing the last tab returns to the workspace page.
 
 The breadcrumb shows the file, detected language, and size. Chroma selects syntax
 highlighting from the filename, including Go, JavaScript/TypeScript, Python,
-Rust, JSON, YAML, shell, and Dockerfiles. Unknown names render as plain text.
+Rust, Java, C#, JSON, YAML, shell, and Dockerfiles. Unknown names render as plain text.
 
 Watching continues regardless of the active tab.
 
