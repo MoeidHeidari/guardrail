@@ -156,13 +156,14 @@ func (engine *Engine) Evaluate(ctx context.Context, path string, content []byte)
 		snapshot.Error = err.Error()
 		result.Findings = append(result.Findings, ErrorFinding(path, "parser", err))
 	}
-	var syntaxJSON []byte
+	var syntaxJSON string
 	if capture {
-		syntaxJSON, err = json.Marshal(snapshot)
+		encoded, err := json.Marshal(snapshot)
 		if err != nil {
 			result.Findings = append(result.Findings, ErrorFinding(path, "parser", fmt.Errorf("encode syntax tree: %w", err)))
 			return result
 		}
+		syntaxJSON = string(encoded)
 	}
 	for _, rule := range engine.rules {
 		if !rule.applies(path) {
@@ -186,7 +187,7 @@ func (engine *Engine) Evaluate(ctx context.Context, path string, content []byte)
 				}
 			}
 		} else {
-			findings, err = engine.javascript(ctx, rule, path, string(content), snapshot, syntaxJSON)
+			findings, err = engine.javascript(ctx, rule, path, string(content), syntaxJSON, snapshot)
 		}
 		if err != nil {
 			findings = []Finding{ErrorFinding(path, rule.spec.ID, err)}

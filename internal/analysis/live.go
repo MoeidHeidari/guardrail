@@ -28,6 +28,11 @@ type cachedResult struct {
 	result  Result
 }
 
+type liveTask struct {
+	path    string
+	version uint64
+}
+
 type Live struct {
 	mu         sync.Mutex
 	root       string
@@ -133,36 +138,44 @@ func (live *Live) run(ctx context.Context, results chan<- LiveResult) {
 					delete(cache, path)
 				}
 			}
+			paths := make([]string, 0, len(entries))
+			tasks := make([]liveTask, 0, len(entries))
 			for path, entry := range entries {
-				if job.Err() != nil {
-					break
-				}
 				path = filepath.ToSlash(path)
 				if entry.entry.IsDir() || !engine.Config.Applies(path) || !entry.entry.Mode.IsRegular() {
 					result.Report.Skipped++
 					continue
 				}
 				result.Report.Checked++
-				cached, exists := cache[path]
-				if !exists || cached.version != entry.version {
-					content, err := Read(live.root, path)
-					file := Result{Path: path}
-					if err != nil {
-						file.Findings = []Finding{ErrorFinding(path, "read", err)}
-					} else {
-						file = engine.Evaluate(job, path, content)
-					}
-					if job.Err() != nil {
-						break
-					}
-					cached = cachedResult{entry.version, file}
-					cache[path] = cached
+				paths = append(paths, path)
+				if cached, exists := cache[path]; !exists || cached.version != entry.version {
+					tasks = append(tasks, liveTask{path: path, version: entry.version})
 				}
-				result.Report.Files = append(result.Report.Files, cached.result)
 			}
-			sort.Slice(result.Report.Files, func(i, j int) bool {
-				return result.Report.Files[i].Path < result.Report.Files[j].Path
-			})
+			if job.Err() == nil && len(tasks) > 0 {
+				evaluated := make([]Result, len(tasks))
+				parallelFor(job, len(tasks), func(ctx context.Context, index int) {
+					path := tasks[index].path
+					content, err := Read(live.root, path)
+					if err != nil {
+						evaluated[index] = Result{Path: path, Findings: []Finding{ErrorFinding(path, "read", err)}}
+						return
+					}
+					evaluated[index] = engine.Evaluate(ctx, path, content)
+				})
+				if job.Err() == nil {
+					for index, task := range tasks {
+						cache[task.path] = cachedResult{task.version, evaluated[index]}
+					}
+				}
+			}
+			sort.Strings(paths)
+			result.Report.Files = make([]Result, 0, len(paths))
+			for _, path := range paths {
+				if cached, exists := cache[path]; exists {
+					result.Report.Files = append(result.Report.Files, cached.result)
+				}
+			}
 		}
 		valid := job.Err() == nil
 		cancel()
