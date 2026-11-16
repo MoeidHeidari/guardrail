@@ -18,33 +18,18 @@ type jsFinding struct {
 	Message string `json:"message"`
 }
 
-func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, content string, snapshot syntaxSnapshot, syntaxJSON []byte) ([]Finding, error) {
-	runtime := goja.New()
-	runtime.SetMaxCallStackSize(256)
-	validator, err := runtime.RunString(`(() => {
-		const stringify = JSON.stringify, isArray = Array.isArray;
-		return value => {
-			if (typeof value === "boolean") return value;
-			if (!isArray(value)) throw Error("rule must return a boolean or an array of findings");
-			if (value.length > 1000) throw Error("rule exceeded 1000 findings per file");
-			const result = stringify(value);
-			if (result === "null" || typeof result !== "string") throw Error("invalid findings");
-			return result;
-		};
-	})()`)
-	if err != nil {
-		return nil, err
-	}
-	validate, ok := goja.AssertFunction(validator)
-	if !ok {
-		return nil, errors.New("cannot initialize result validation")
-	}
+func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, content, syntaxJSON string, snapshot syntaxSnapshot) ([]Finding, error) {
 	timeout := engine.Config.TimeoutMS
 	if rule.spec.TimeoutMS > 0 {
 		timeout = rule.spec.TimeoutMS
 	}
 	deadline, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Millisecond)
 	defer cancel()
+	if err := deadline.Err(); err != nil {
+		return nil, err
+	}
+	runtime := goja.New()
+	runtime.SetMaxCallStackSize(256)
 	done := make(chan struct{})
 	stopped := make(chan struct{})
 	go func() {
@@ -56,28 +41,11 @@ func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, c
 		}
 	}()
 	defer func() { close(done); <-stopped }()
-	factory, err := runtime.RunProgram(syntaxProgram)
+	session, err := newJSSession(runtime, content, syntaxJSON, snapshot)
 	if err != nil {
 		return nil, err
 	}
-	buildAPI, ok := goja.AssertFunction(factory)
-	if !ok {
-		return nil, errors.New("cannot initialize syntax API")
-	}
-	api, err := buildAPI(goja.Undefined(), runtime.ToValue(string(syntaxJSON)), runtime.ToValue(content),
-		runtime.ToValue(snapshot.Language), runtime.ToValue(snapshot.Parsed), runtime.ToValue(snapshot.Error))
-	if err != nil {
-		return nil, err
-	}
-	changeFactory, err := runtime.RunProgram(changeProgram)
-	if err != nil {
-		return nil, err
-	}
-	buildChange, ok := goja.AssertFunction(changeFactory)
-	if !ok {
-		return nil, errors.New("cannot initialize change API")
-	}
-	change, err := buildChange(goja.Undefined(), runtime.ToValue(content), api)
+	change, err := session.buildChange(goja.Undefined(), runtime.ToValue(content), session.api)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +61,7 @@ func (engine *Engine) javascript(ctx context.Context, rule compiledRule, path, c
 	if err != nil {
 		return nil, err
 	}
-	value, err = validate(goja.Undefined(), value)
+	value, err = session.validate(goja.Undefined(), value)
 	if err != nil {
 		return nil, err
 	}

@@ -13,6 +13,7 @@ func (engine *Engine) Check(ctx context.Context, root string) (Report, error) {
 	if err != nil {
 		return report, err
 	}
+	var paths []string
 	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -43,15 +44,25 @@ func (engine *Engine) Check(ctx context.Context, root string) (Report, error) {
 			return nil
 		}
 		report.Checked++
-		result := Result{Path: relative}
-		content, err := Read(root, relative)
-		if err != nil {
-			result.Findings = []Finding{ErrorFinding(relative, "read", err)}
-		} else {
-			result = engine.Evaluate(ctx, relative, content)
-		}
-		report.Files = append(report.Files, result)
+		paths = append(paths, relative)
 		return nil
 	})
-	return report, err
+	if err != nil {
+		return report, err
+	}
+	results := make([]Result, len(paths))
+	parallelFor(ctx, len(paths), func(ctx context.Context, index int) {
+		path := paths[index]
+		content, err := Read(root, path)
+		if err != nil {
+			results[index] = Result{Path: path, Findings: []Finding{ErrorFinding(path, "read", err)}}
+			return
+		}
+		results[index] = engine.Evaluate(ctx, path, content)
+	})
+	if err := ctx.Err(); err != nil {
+		return report, err
+	}
+	report.Files = results
+	return report, nil
 }

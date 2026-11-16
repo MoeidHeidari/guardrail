@@ -30,14 +30,14 @@ func TestTextRulesDoNotDecodeSyntaxNodes(t *testing.T) {
 			if (syntax.language !== "text" || syntax.parsed) throw Error("wrong metadata");
 			return false;
 		}`})
-	_, err := engine.javascript(context.Background(), engine.rules[0], "a.txt", "plain",
-		syntaxSnapshot{Language: "text"}, []byte("not JSON"))
+	snapshot := syntaxSnapshot{Language: "text", Nodes: []syntaxNode{{}}}
+	_, err := engine.javascript(context.Background(), engine.rules[0], "a.txt", "plain", "not JSON", snapshot)
 	if err != nil {
 		t.Fatalf("text-only rules must not decode unused syntax: %v", err)
 	}
 	engine = testEngine(t, config.Rule{ID: "ast", Type: "javascript", Code: `(path, change) => change.ast.nodes`})
-	_, err = engine.javascript(context.Background(), engine.rules[0], "a.js", "",
-		syntaxSnapshot{Language: "JavaScript", Parsed: true}, []byte("not JSON"))
+	snapshot.Language, snapshot.Parsed = "JavaScript", true
+	_, err = engine.javascript(context.Background(), engine.rules[0], "a.js", "", "not JSON", snapshot)
 	if err == nil {
 		t.Fatal("accessing syntax nodes must decode and surface invalid snapshot errors")
 	}

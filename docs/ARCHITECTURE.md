@@ -63,9 +63,10 @@ The shared engine consumes `(context, relative path, content)` independently of
 terminal rendering. File discovery/read helpers feed it in both `check` and live
 mode. The JavaScript interface is `(path, change)`, with saved content, cached
 language-adapted helpers, and a frozen, bounded named-node snapshot under
-`change.ast`, with no host filesystem/network APIs. A fresh runtime
-per file/rule avoids shared mutable state. The snapshot is captured once per
-file evaluation before Tree-sitter trees/parsers are closed.
+`change.ast`, with no host filesystem/network APIs. A fresh runtime per
+file/rule avoids shared mutable state. The snapshot is captured once per file
+evaluation before Tree-sitter trees/parsers are closed, and decoded lazily by
+each rule that accesses its nodes.
 
 Parsing errors, read errors, configuration failures and runtime failures remain
 distinct from policy violations. Unsupported grammars are explicitly text-only.

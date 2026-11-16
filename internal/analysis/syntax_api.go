@@ -111,7 +111,6 @@ const syntaxAPI = `(encoded, content, language, parsed, error) => {
 			freeze(node);
 		}
 		freeze(nodes);
-		members = new Set(nodes);
 		return nodes;
 	};
 	const at = id => {
@@ -120,6 +119,7 @@ const syntaxAPI = `(encoded, content, language, parsed, error) => {
 	};
 	const check = node => {
 		load();
+		if (members === undefined) members = new Set(nodes);
 		if (!members.has(node)) throw Error("node does not belong to this syntax tree");
 		return node;
 	};

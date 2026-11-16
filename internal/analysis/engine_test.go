@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -99,6 +100,37 @@ func TestJavaScriptDeadline(t *testing.T) {
 	if len(result.Findings) != 1 || result.Findings[0].Kind != "error" ||
 		!strings.Contains(result.Findings[0].Message, "context deadline exceeded") {
 		t.Fatalf("expected explicit deadline error: %+v", result.Findings)
+	}
+}
+
+func TestJavaScriptRuleRuntimeIsolation(t *testing.T) {
+	engine, err := New(t.TempDir(), config.Config{Include: []string{"**"}, TimeoutMS: 1000,
+		Rules: []config.Rule{
+			{ID: "mutate", Type: "javascript", Code: `() => {
+				globalThis.leaked = true;
+				Array.prototype.filter = () => [];
+				return [];
+			}`},
+			{ID: "verify", Type: "javascript", Code: `(path, change) =>
+				typeof globalThis.leaked === "undefined" &&
+				change.ast.find("call_expression").length === 1`},
+		}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := engine.Evaluate(context.Background(), "a.js", []byte("run();"))
+	if len(result.Findings) != 1 || result.Findings[0].Rule != "verify" || result.Findings[0].Kind != "violation" {
+		t.Fatalf("rules must not share globals or prototypes: %+v", result.Findings)
+	}
+}
+
+func TestJavaScriptAlreadyCanceled(t *testing.T) {
+	engine := testEngine(t, config.Rule{ID: "js", Type: "javascript", Code: `() => { while (true) {} }`})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := engine.javascript(ctx, engine.rules[0], "a.txt", "text", "{}", syntaxSnapshot{Language: "text"})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected cancellation before execution, got %v", err)
 	}
 }
 
