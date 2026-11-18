@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/MoeidHeidari/guardrail/internal/analysis"
@@ -14,9 +15,17 @@ import (
 )
 
 func Run(ctx context.Context, contextPath string) (err error) {
-	root, err := watcher.ResolveRoot(contextPath)
-	if err != nil {
-		return err
+	root := contextPath
+	if root == "" {
+		root, err = os.Getwd()
+		if err != nil {
+			return fmt.Errorf("resolve current directory: %w", err)
+		}
+	} else {
+		root, err = watcher.ResolveRoot(root)
+		if err != nil {
+			return err
+		}
 	}
 	terminal, err := tui.NewApp()
 	if err != nil {
@@ -28,6 +37,37 @@ func Run(ctx context.Context, contextPath string) (err error) {
 		}
 	}()
 	theme := styles.Detect()
+	opened := false
+	openTerminal := func() error {
+		if err := terminal.Open(); err != nil {
+			return fmt.Errorf("open terminal workspace: %w", err)
+		}
+		opened = true
+		return nil
+	}
+	if contextPath == "" {
+		picker := screens.NewPathPicker(theme, root, watcher.ResolveRoot)
+		terminal.SetRootComponent(picker)
+		if err := openTerminal(); err != nil {
+			return err
+		}
+		root, err = selectContext(ctx, terminal, picker)
+		if err != nil || root == "" {
+			return err
+		}
+	}
+	if err := validateRules(root); err != nil {
+		terminal.SetRootComponent(screens.NewSetupDialog(theme, root, err))
+		if !opened {
+			if err := openTerminal(); err != nil {
+				return err
+			}
+		} else {
+			terminal.MarkDirty()
+			terminal.Render()
+		}
+		return waitForSetup(ctx, terminal)
+	}
 	files, err := watcher.New(root)
 	if err != nil {
 		return err
@@ -45,8 +85,10 @@ func Run(ctx context.Context, contextPath string) (err error) {
 	defer stopPreviews()
 	terminal.SetRootComponent(screen)
 
-	if err := terminal.Open(); err != nil {
-		return fmt.Errorf("open terminal workspace: %w", err)
+	if !opened {
+		if err := openTerminal(); err != nil {
+			return err
+		}
 	}
 	frames := newFrameQueue()
 	defer frames.timer.Stop()

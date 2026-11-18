@@ -45,10 +45,21 @@ var DefaultInclude = []string{
 	"**/*.css", "**/*.html", "**/Dockerfile", "**/Makefile",
 }
 
-var DefaultExclude = []string{
-	".git/**", ".guardrail/**", ".guard/**", FileName, "**/node_modules/**",
-	"**/vendor/**", "**/.venv/**", "**/venv/**", "**/__pycache__/**",
-	"**/dist/**", "**/build/**", "**/target/**", "**/bin/**",
+var DefaultIgnoredDirectories = []string{
+	"**/node_modules/", "**/vendor/", "**/.venv/", "**/venv/",
+	"**/__pycache__/", "**/dist/", "**/build/", "**/target/", "**/bin/",
+}
+
+var DefaultExclude = append([]string{
+	".git/**", ".guardrail/**", ".guard/**", FileName,
+}, defaultExcludedPaths()...)
+
+func defaultExcludedPaths() []string {
+	paths := make([]string, len(DefaultIgnoredDirectories))
+	for i, pattern := range DefaultIgnoredDirectories {
+		paths[i] = strings.TrimSuffix(pattern, "/") + "/**"
+	}
+	return paths
 }
 
 func loadFile(root, path string) (cfg Config, err error) {

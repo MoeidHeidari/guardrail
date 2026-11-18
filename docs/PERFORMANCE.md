@@ -54,10 +54,11 @@ replace pending work, not the running operation.
 Syntax spans and text for the selected preview are cached within the preview
 limits. File contents are not cached for the whole repository.
 
-The root `.guardignore` excludes paths from watching, browsing, and checking.
-Ignored directories are pruned before allocating watches. Git's `.gitignore`
-files are not loaded automatically. Analysis also applies per-set YAML scopes
-and default dependency/generated exclusions. See [Rules](RULES.md) and
+Default dependency/generated directories and paths excluded by the root
+`.guardignore` are pruned before allocating watches; `.guardignore` can
+re-include default-excluded directories. Git's `.gitignore` files are not loaded
+automatically. Analysis also applies per-set YAML scopes and default
+dependency/generated exclusions. See [Rules](RULES.md) and
 [Ignore paths](WATCH.md#ignore-paths).
 
 ## Platform limits

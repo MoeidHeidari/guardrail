@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/MoeidHeidari/guardrail/internal/config"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 )
 
@@ -23,9 +24,13 @@ func Load(root string) (matcher *Matcher, err error) {
 		return nil, err
 	}
 	defer func() { err = errors.Join(err, dir.Close()) }()
+	patterns := make([]gitignore.Pattern, 0, len(config.DefaultIgnoredDirectories))
+	for _, line := range config.DefaultIgnoredDirectories {
+		patterns = append(patterns, gitignore.ParsePattern(line, nil))
+	}
 	file, err := dir.Open(FileName)
 	if errors.Is(err, os.ErrNotExist) {
-		return &Matcher{}, nil
+		return &Matcher{matcher: gitignore.NewMatcher(patterns)}, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("load %s: %w", FileName, err)
@@ -38,7 +43,6 @@ func Load(root string) (matcher *Matcher, err error) {
 	if len(data) > 1<<20 {
 		return nil, fmt.Errorf("%s exceeds 1 MiB", FileName)
 	}
-	var patterns []gitignore.Pattern
 	scanner := bufio.NewScanner(strings.NewReader(string(data)))
 	scanner.Buffer(make([]byte, 4096), 1<<20)
 	for scanner.Scan() {
