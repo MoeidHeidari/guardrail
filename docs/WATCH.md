@@ -42,7 +42,8 @@ The preview follows the selected location without leaving Overview. Saved edits
 refresh that preview. Its mouse wheel and scrollbar scroll content independently.
 It shows the context path, entry count, changed-file count, and analysis status.
 Violations shows policy violations and execution errors; Rules lists active
-regex/JavaScript rules. Missing or invalid configuration is explicitly reported.
+regex/JavaScript rules. A missing or invalid rule configuration opens a setup
+dialog instead of the workspace; see [Rules and checking](RULES.md).
 Rules groups entries by rule set, with live impact summaries for each set and
 rule: unique affected files, violation occurrences, and execution errors.
 The Rules workspace uses a grouped table on the left: rule sets are parents
@@ -61,7 +62,7 @@ Use `Tab` between the rule tree, files, and the preview when visible; arrows nav
 select directly. File selection updates the preview without opening Content.
 Narrow terminals stack the two lists above the preview. A file with several findings counts once
 in each file total; set totals deduplicate across their rules. Pending analysis
-is labeled outdated rather than implying the previous counts are current. Missing or invalid configuration is explicitly reported.
+is labeled outdated rather than implying the previous counts are current.
 No policy is built in. See [Rules and checking](RULES.md).
 The violation table has fixed column headings for kind, file/location, rule set,
 rule, and message.
@@ -127,7 +128,10 @@ Watching continues regardless of the active tab.
 - Explicit expansion/collapse choices survive filesystem updates.
 - Collapsed folders and their descendants remain watched.
 - Hidden and Git-ignored entries are included unless `.guardignore` excludes
-  them. Git's `.gitignore` files are not read automatically.
+  them. Dependency and generated directories excluded by default include
+  `node_modules`, `vendor`, Python environments/caches, `dist`, `build`,
+  `target`, and `bin`. `.guardignore` can override these defaults. Git's
+  `.gitignore` files are not read automatically.
 - Symlink entries are shown without recursively following their targets.
 
 ## Ignore paths
@@ -148,12 +152,14 @@ Last matching pattern wins. As in Git, you cannot re-include a file while its
 parent directory is ignored; unignore the parent first.
 
 Ignored entries are omitted from the context tree, activity feed, and `check`.
-Ignored directories are pruned before watches are allocated. Git's `.gitignore`
-and nested ignore files are not loaded. The root and `.guardignore` itself remain
-observable so edits, replacement, creation, or deletion of the ignore file
-trigger a full rescan and watch reconciliation. Paths becoming hidden appear
-as removals; paths becoming visible appear as additions. Keep `.guard/` visible
-if you want changes to rule sets/scripts to trigger automatic reanalysis.
+Default dependency and generated directories, as well as `.guardignore`
+exclusions, are pruned before watches are allocated. `.guardignore` patterns
+can re-include default-excluded directories. Git's `.gitignore` and nested ignore
+files are not loaded. The root and `.guardignore` itself remain observable so
+edits, replacement, creation, or deletion of the ignore file trigger a full
+rescan and watch reconciliation. Paths becoming hidden appear as removals;
+paths becoming visible appear as additions. Keep `.guard/` visible if you want
+changes to rule sets/scripts to trigger automatic reanalysis.
 Unreadable or oversized ignore files (over 1 MiB) are errors.
 
 ## Change markers and activity

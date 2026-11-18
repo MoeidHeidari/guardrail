@@ -79,8 +79,9 @@ caches, `dist`, `build`, `target`, and `bin` directories. Explicit include/exclu
 lists replace their corresponding defaults. The root `.git/`, `.guard/`,
 `.guardrail/` are always excluded from analysis.
 
-Browsing and watching include those paths unless excluded by the root
-`.guardignore`. `check` honors the same ignore file. Analysis does not follow
+Browsing and watching also omit the default dependency and generated
+directories; the root `.guardignore` can exclude additional paths or re-include
+those defaults. `check` honors the same exclusions. Analysis does not follow
 symlink files. Matching files must be UTF-8 regular files without NUL bytes and
 at most 4 MiB; unsupported matching content produces a visible read error.
 Configuration is limited to 1 MiB and JavaScript source to 64 KiB.
@@ -332,5 +333,6 @@ folder-based rule set, YAML/JavaScript source, and exact file location. Rules li
 active configuration. Live activity remains in the sidebar rather than a
 separate Watch page.
 While analysis runs, previous results are explicitly labeled outdated.
-Missing or invalid configuration does not stop browsing/watching, but is not a
-clean analysis result.
+`watch` opens a setup dialog instead of the workspace when `.guard/` has no
+rules or any rule set is invalid. The dialog includes the configuration error
+and points to [Getting started](GETTING_STARTED.md) and this guide.

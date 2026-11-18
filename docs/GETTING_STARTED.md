@@ -43,7 +43,7 @@ repository. From elsewhere, use its absolute path or a binary on your `PATH`.
 The context is the directory Guardrail monitors recursively.
 
 ```sh
-# Watch the working directory.
+# Choose a context interactively.
 ./bin/guardrail watch
 
 # Watch a relative or absolute directory.
@@ -55,10 +55,12 @@ The context is the directory Guardrail monitors recursively.
 ./bin/guardrail watch -c ../my-project
 ```
 
-The default is the directory where the process starts, not the binary's directory
-or an automatically discovered Git root. The path must exist and be a directory.
-Use either the positional argument or the flag; combining them is an error.
-A symlink supplied as the root is resolved to its target.
+When `watch` is started without a path, a panel opens with the current working
+directory prefilled. Edit the path and press Enter to select it; Escape cancels.
+This is the process's working directory, not the binary's directory or an
+automatically discovered Git root. The path must exist and be a directory. Use
+either the positional argument or the flag; combining them is an error. A
+symlink supplied as the root is resolved to its target.
 
 ```sh
 ./bin/guardrail --help
@@ -67,14 +69,16 @@ A symlink supplied as the root is resolved to its target.
 
 ## First session
 
-1. Start `watch` in the project you want to monitor.
-2. Overview opens with a workspace summary; navigation is above the context tree.
-3. The context root is expanded; its immediate files and folders are visible.
-4. Expand a child folder with Right, `Enter`, or a click.
-5. Select a file and press `Enter` to open Content.
-6. Edit and save that file in your editor. Guardrail shows its activity and
+1. Start `watch` in the project you want to monitor, or select its path when prompted.
+2. Ensure the context has at least one valid YAML rule set under `.guard/`.
+   If not, Guardrail shows a setup dialog with the error and documentation links.
+3. Overview opens with a workspace summary; navigation is above the context tree.
+4. The context root is expanded; its immediate files and folders are visible.
+5. Expand a child folder with Right, `Enter`, or a click.
+6. Select a file and press `Enter` to open Content.
+7. Edit and save that file in your editor. Guardrail shows its activity and
    refreshes the preview.
-7. Press `w` to focus sidebar activity without replacing Content, `0` to return
+8. Press `w` to focus sidebar activity without replacing Content, `0` to return
    to the workspace page, `Esc` to go back to the sidebar, or `q` to quit.
 
 Guardrail previews files but does not edit them. You do not need an AI coding agent
@@ -83,9 +87,9 @@ to use watching, and filesystem activity does not identify who authored an edit.
 ## Configure analysis
 
 Add YAML rule sets under `.guard/` and functions under `.guard/` or `.guardrail/`.
-See [Rules and checking](RULES.md) for complete examples. Watch remains usable
-without configuration, but explicitly reports that analysis is unavailable.
-Use `guardrail check [context-path] --format json` for noninteractive reports.
+See [Rules and checking](RULES.md) for complete examples. `watch` requires at
+least one valid rule set and shows a setup dialog otherwise. Use
+`guardrail check [context-path] --format json` for noninteractive reports.
 
 ## Troubleshooting
 

@@ -15,6 +15,13 @@ import (
 
 func TestLargeContextTerminalInput(t *testing.T) {
 	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, ".guard"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	rules := "version: 1\nrules:\n  - id: todo\n    type: regex\n    pattern: TODO\n"
+	if err := os.WriteFile(filepath.Join(root, ".guard", "rules.yml"), []byte(rules), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	for i := range 1400 {
 		if err := os.WriteFile(filepath.Join(root, fmt.Sprintf("file%04d.txt", i)), []byte("hello\n"), 0o600); err != nil {
 			t.Fatal(err)

@@ -23,6 +23,6 @@ func newWatchCmd() *cobra.Command {
 			return app.Run(cmd.Context(), contextPath)
 		},
 	}
-	command.Flags().StringVarP(&contextPath, "context", "c", ".", "Context directory (defaults to the current working directory)")
+	command.Flags().StringVarP(&contextPath, "context", "c", "", "Context directory (prompts when omitted)")
 	return command
 }

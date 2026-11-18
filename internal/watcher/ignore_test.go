@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -79,6 +80,67 @@ func TestIgnoreDiscoveryAndLiveReload(t *testing.T) {
 			}
 		case <-timer.C:
 			t.Fatal("ignore edit was not reloaded")
+		}
+	}
+}
+
+func TestDefaultExcludedDirectoriesAreNotWatched(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "web", "node_modules", "@babel", "helper-module-transforms")
+	if err := os.MkdirAll(path, 0700); err != nil {
+		t.Fatal(err)
+	}
+	write := filepath.Join(path, "index.js")
+	if err := os.WriteFile(write, []byte("module.exports = {};"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	w, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := w.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	if _, exists := w.index[filepath.Join("web", "node_modules")]; exists {
+		t.Fatal("default-excluded dependency directory was indexed")
+	}
+	for _, path := range w.backend.WatchList() {
+		if strings.Contains(path, string(filepath.Separator)+"node_modules") {
+			t.Fatalf("default-excluded dependency directory was watched: %s", path)
+		}
+	}
+}
+
+func TestIgnoreFileCanReincludeDefaultExcludedDirectory(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "web", "node_modules", "package")
+	if err := os.MkdirAll(path, 0700); err != nil {
+		t.Fatal(err)
+	}
+	write := filepath.Join(path, "index.js")
+	if err := os.WriteFile(write, []byte("module.exports = {};"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".guardignore"), []byte("!web/node_modules/\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	w, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := w.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	for _, path := range []string{
+		filepath.Join("web", "node_modules"),
+		filepath.Join("web", "node_modules", "package", "index.js"),
+	} {
+		if _, exists := w.index[path]; !exists {
+			t.Fatalf("re-included path was not discovered: %s", path)
 		}
 	}
 }
