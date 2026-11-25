@@ -1,0 +1,14 @@
+rules:
+  - id: secure-network-calls
+    type: javascript
+    include:
+      - "**/*.ts"
+      - "**/*.js"
+      - "**/*.tsx"
+    description: "Block unauthorized absolute URLs in fetch or axios requests."
+    code: |
+      (path, change) => change.calls()
+        .filter(call => call.text.startsWith("fetch(") || call.text.startsWith("axios."))
+        .filter(call => call.text.includes("http://") || call.text.includes("https://"))
+        .filter(call => !call.text.includes("api.trusted-domain.com"))
+        .map(call => call.finding("Security Violation: Unauthorized external API endpoint detected in network call."));
